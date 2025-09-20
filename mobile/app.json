@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "mobile",
-    "slug": "mobile",
+    "name": "AirWise",
+    "slug": "airwise",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",

@@ -1,15 +1,8 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import HomeScreen from '../screens/HomeScreen';
+import RunCoachScreen from '../screens/RunCoachScreen';
 import BottomNavigation from './BottomNavigation';
-
-// Placeholder screens - we'll create these next
-const HistoryScreen = () => (
-  <View style={styles.placeholderScreen}>
-    <Text style={styles.placeholderText}>History Screen</Text>
-    <Text style={styles.placeholderSubtext}>Coming Soon</Text>
-  </View>
-);
 
 const MapScreen = () => (
   <View style={styles.placeholderScreen}>
@@ -33,7 +26,7 @@ const MainNavigator = () => {
       case 'home':
         return <HomeScreen />;
       case 'history':
-        return <HistoryScreen />;
+        return <RunCoachScreen />;
       case 'map':
         return <MapScreen />;
       case 'settings':

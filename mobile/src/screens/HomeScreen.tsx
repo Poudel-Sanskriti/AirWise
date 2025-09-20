@@ -47,7 +47,7 @@ const HomeScreen = () => {
 
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.appTitle}>AirGuard</Text>
+        <Text style={styles.appTitle}>AirWise</Text>
         <Text style={styles.subtitle}>Your Lung Health Companion</Text>
 
         {/* Location Chip */}
