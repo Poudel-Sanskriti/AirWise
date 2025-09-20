@@ -13,7 +13,24 @@ import { Ionicons } from '@expo/vector-icons';
 import AirQualityApiService, { AirQualityData } from '../services/airQualityApi';
 import LocationService, { LocationWithDetails } from '../services/locationService';
 
-const HomeScreen = () => {
+interface SavedPlace {
+  id: string;
+  name: string;
+  icon: keyof typeof Ionicons.glyphMap;
+  address: string;
+  latitude: number;
+  longitude: number;
+  currentStatus?: 'good' | 'moderate' | 'caution' | 'unhealthy';
+  outlook?: 'improving' | 'stable' | 'declining';
+  lastUpdated?: string;
+}
+
+interface HomeScreenProps {
+  selectedPlace?: SavedPlace | null;
+  onClearSelectedPlace?: () => void;
+}
+
+const HomeScreen: React.FC<HomeScreenProps> = ({ selectedPlace, onClearSelectedPlace }) => {
   const [airQualityData, setAirQualityData] = useState<AirQualityData | null>(null);
   const [userLocation, setUserLocation] = useState<LocationWithDetails | null>(null);
   const [loading, setLoading] = useState(true);
@@ -21,8 +38,12 @@ const HomeScreen = () => {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    loadLocationAndAirQuality();
-  }, []);
+    if (selectedPlace) {
+      loadSelectedPlaceAirQuality();
+    } else {
+      loadLocationAndAirQuality();
+    }
+  }, [selectedPlace]);
 
   const loadLocationAndAirQuality = async () => {
     try {
@@ -63,8 +84,48 @@ const HomeScreen = () => {
     }
   };
 
+  const loadSelectedPlaceAirQuality = async () => {
+    if (!selectedPlace) return;
+
+    try {
+      setLoading(true);
+      setLocationLoading(false);
+      setError(null);
+
+      console.log(`📍 Loading air quality for ${selectedPlace.name}...`);
+
+      // Convert savedPlace to location format
+      const location: LocationWithDetails = {
+        latitude: selectedPlace.latitude,
+        longitude: selectedPlace.longitude,
+        timestamp: Date.now(),
+        formattedAddress: selectedPlace.address,
+        coordinatesDisplay: `${selectedPlace.latitude.toFixed(4)}°${selectedPlace.latitude >= 0 ? 'N' : 'S'}, ${Math.abs(selectedPlace.longitude).toFixed(4)}°${selectedPlace.longitude >= 0 ? 'E' : 'W'}`,
+      };
+
+      setUserLocation(location);
+
+      // Get air quality for the selected place
+      const data = await AirQualityApiService.getCurrentAirQuality(
+        selectedPlace.latitude,
+        selectedPlace.longitude
+      );
+
+      setAirQualityData(data);
+    } catch (err) {
+      setError('Failed to load data for selected place');
+      console.error('Selected place air quality error:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const refreshLocation = async () => {
-    await loadLocationAndAirQuality();
+    if (selectedPlace) {
+      await loadSelectedPlaceAirQuality();
+    } else {
+      await loadLocationAndAirQuality();
+    }
   };
 
   if (loading) {
@@ -121,8 +182,9 @@ const HomeScreen = () => {
   };
 
   const statusDisplay = getStatusDisplay(airQualityData.status);
-  const locationText = userLocation?.formattedAddress || `${airQualityData.location.area}, ${airQualityData.location.state}`;
+  const locationText = selectedPlace ? selectedPlace.name : (userLocation?.formattedAddress || `${airQualityData.location.area}, ${airQualityData.location.state}`);
   const coordinatesText = userLocation?.coordinatesDisplay || '';
+  const showBackButton = !!selectedPlace;
 
   const getStatusIcon = (status: string) => {
     switch (status) {
@@ -143,13 +205,26 @@ const HomeScreen = () => {
 
       {/* Header */}
       <View style={styles.header}>
+        {showBackButton && (
+          <TouchableOpacity style={styles.backButton} onPress={onClearSelectedPlace}>
+            <Ionicons name="arrow-back" size={24} color="white" />
+            <Text style={styles.backButtonText}>Back to Current Location</Text>
+          </TouchableOpacity>
+        )}
+
         <Text style={styles.appTitle}>AirWise</Text>
-        <Text style={styles.subtitle}>Your Lung Health Companion</Text>
+        <Text style={styles.subtitle}>
+          {selectedPlace ? `Air Quality for ${selectedPlace.name}` : 'Your Lung Health Companion'}
+        </Text>
 
         {/* Location Section */}
         <TouchableOpacity style={styles.locationContainer} onPress={refreshLocation}>
           <View style={styles.locationChip}>
-            <Ionicons name="location" size={16} color="#FF5722" />
+            <Ionicons
+              name={selectedPlace ? selectedPlace.icon : "location"}
+              size={16}
+              color="#FF5722"
+            />
             <Text style={styles.locationText}>{locationText}</Text>
             {locationLoading && (
               <ActivityIndicator size="small" color="white" style={styles.locationSpinner} />
@@ -157,6 +232,9 @@ const HomeScreen = () => {
           </View>
           {coordinatesText && (
             <Text style={styles.coordinatesText}>{coordinatesText}</Text>
+          )}
+          {selectedPlace && (
+            <Text style={styles.coordinatesText}>{selectedPlace.address}</Text>
           )}
         </TouchableOpacity>
       </View>
@@ -412,6 +490,21 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#666',
     textAlign: 'center',
+  },
+  backButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    marginBottom: 16,
+    padding: 8,
+    borderRadius: 8,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+  },
+  backButtonText: {
+    color: 'white',
+    fontSize: 14,
+    marginLeft: 8,
+    fontWeight: '500',
   },
 });
 

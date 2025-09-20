@@ -2,14 +2,20 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import HomeScreen from '../screens/HomeScreen';
 import RunCoachScreen from '../screens/RunCoachScreen';
+import SavedPlacesScreen from '../screens/SavedPlacesScreen';
 import BottomNavigation from './BottomNavigation';
 
-const MapScreen = () => (
-  <View style={styles.placeholderScreen}>
-    <Text style={styles.placeholderText}>Map Screen</Text>
-    <Text style={styles.placeholderSubtext}>Coming Soon</Text>
-  </View>
-);
+interface SavedPlace {
+  id: string;
+  name: string;
+  icon: keyof typeof import('@expo/vector-icons').Ionicons.glyphMap;
+  address: string;
+  latitude: number;
+  longitude: number;
+  currentStatus?: 'good' | 'moderate' | 'caution' | 'unhealthy';
+  outlook?: 'improving' | 'stable' | 'declining';
+  lastUpdated?: string;
+}
 
 const SettingsScreen = () => (
   <View style={styles.placeholderScreen}>
@@ -20,19 +26,25 @@ const SettingsScreen = () => (
 
 const MainNavigator = () => {
   const [activeTab, setActiveTab] = useState('home');
+  const [selectedPlace, setSelectedPlace] = useState<SavedPlace | null>(null);
+
+  const navigateToPlaceHome = (place: SavedPlace) => {
+    setSelectedPlace(place);
+    setActiveTab('home');
+  };
 
   const renderScreen = () => {
     switch (activeTab) {
       case 'home':
-        return <HomeScreen />;
+        return <HomeScreen selectedPlace={selectedPlace} onClearSelectedPlace={() => setSelectedPlace(null)} />;
       case 'history':
         return <RunCoachScreen />;
       case 'map':
-        return <MapScreen />;
+        return <SavedPlacesScreen onPlaceSelect={navigateToPlaceHome} />;
       case 'settings':
         return <SettingsScreen />;
       default:
-        return <HomeScreen />;
+        return <HomeScreen selectedPlace={selectedPlace} onClearSelectedPlace={() => setSelectedPlace(null)} />;
     }
   };
 

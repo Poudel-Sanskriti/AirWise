@@ -11,7 +11,7 @@ const BottomNavigation: React.FC<BottomNavigationProps> = ({ activeTab, onTabCha
   const tabs = [
     { id: 'home', label: 'Home', icon: 'home' as const },
     { id: 'history', label: 'Run', icon: 'walk' as const },
-    { id: 'map', label: 'Map', icon: 'location' as const },
+    { id: 'map', label: 'Places', icon: 'bookmark' as const },
     { id: 'settings', label: 'Settings', icon: 'settings' as const },
   ];
 
