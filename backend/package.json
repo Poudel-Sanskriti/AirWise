@@ -1,0 +1,44 @@
+{
+  "name": "airwise-backend",
+  "version": "1.0.0",
+  "description": "AirWise backend API for air quality monitoring",
+  "main": "dist/server.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/server.js",
+    "dev": "tsx watch src/server.ts",
+    "test": "jest",
+    "lint": "eslint src/**/*.ts",
+    "format": "prettier --write src/**/*.ts"
+  },
+  "keywords": ["air-quality", "health", "api"],
+  "author": "AirWise Team",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.18.2",
+    "cors": "^2.8.5",
+    "helmet": "^7.0.0",
+    "mongoose": "^7.5.0",
+    "dotenv": "^16.3.1",
+    "axios": "^1.5.0",
+    "express-rate-limit": "^6.10.0",
+    "joi": "^17.9.2",
+    "jsonwebtoken": "^9.0.2",
+    "bcryptjs": "^2.4.3"
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.17",
+    "@types/cors": "^2.8.13",
+    "@types/node": "^20.5.0",
+    "@types/bcryptjs": "^2.4.2",
+    "@types/jsonwebtoken": "^9.0.2",
+    "typescript": "^5.1.6",
+    "tsx": "^3.12.7",
+    "eslint": "^8.47.0",
+    "@typescript-eslint/eslint-plugin": "^6.4.0",
+    "@typescript-eslint/parser": "^6.4.0",
+    "prettier": "^3.0.1",
+    "jest": "^29.6.2",
+    "@types/jest": "^29.5.4"
+  }
+}

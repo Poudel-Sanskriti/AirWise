@@ -1,0 +1,35 @@
+{
+  "name": "airwise-monorepo",
+  "version": "1.0.0",
+  "description": "AirWise - Air Quality & Lung Health App for IDSO Challenge",
+  "private": true,
+  "workspaces": [
+    "mobile",
+    "backend"
+  ],
+  "scripts": {
+    "mobile": "cd mobile && npm start",
+    "mobile:android": "cd mobile && npm run android",
+    "mobile:ios": "cd mobile && npm run ios",
+    "mobile:web": "cd mobile && npm run web",
+    "backend": "cd backend && npm run dev",
+    "backend:build": "cd backend && npm run build",
+    "backend:start": "cd backend && npm start",
+    "install:all": "npm install && cd mobile && npm install && cd ../backend && npm install",
+    "dev": "concurrently \"npm run backend\" \"npm run mobile\"",
+    "build:all": "cd backend && npm run build",
+    "test:all": "cd backend && npm test"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.0"
+  },
+  "keywords": [
+    "air-quality",
+    "health",
+    "mobile-app",
+    "hackathon",
+    "idso-challenge"
+  ],
+  "author": "AirWise Team",
+  "license": "MIT"
+}
