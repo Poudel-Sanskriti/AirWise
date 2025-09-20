@@ -116,7 +116,7 @@ function calculateEpaAqi(components: AirComponents): { aqi: number; status: Stat
   const pollutants = [
     { value: components.pm2_5, breakpoints: [0, 12.0, 35.4, 55.4, 150.4, 250.4, 350.4, 500.4] },
     { value: components.pm10, breakpoints: [0, 54, 154, 254, 354, 424, 504, 604] },
-    { value: components.o3, breakpoints: [0, 54, 70, 85, 105, 200, 300, 400] }, // 8-hour avg approximation
+    { value: components.o3 * 0.5, breakpoints: [0, 54, 70, 85, 105, 200, 300, 400] }, // Convert µg/m³ to ppb for EPA calculation
     { value: components.no2, breakpoints: [0, 53, 100, 360, 649, 1249, 1649, 2049] },
     { value: components.so2, breakpoints: [0, 35, 75, 185, 304, 604, 804, 1004] },
     { value: components.co / 1000, breakpoints: [0, 4.4, 9.4, 12.4, 15.4, 30.4, 40.4, 50.4] }, // Convert to ppm
@@ -161,7 +161,7 @@ function calculateEpaAqi(components: AirComponents): { aqi: number; status: Stat
 }
 
 function formatValue(key: keyof AirComponents, value: number): string {
-  const decimals = key === 'pm2_5' ? 1 : 0;
+  const decimals = (key === 'pm2_5' || key === 'no2') ? 1 : 0;
   return `${value.toFixed(decimals)} µg/m³`;
 }
 
@@ -232,7 +232,14 @@ export default function HomeScreen() {
   const [components, setComponents] = React.useState<AirComponents | null>(null);
   const [epaAqi, setEpaAqi] = React.useState<{ aqi: number; status: StatusInfo } | null>(null);
 
+  // Debug environment variables
+  console.log('🔍 Environment Variables:', {
+    'process.env.OPENWEATHER_API_KEY': process.env.OPENWEATHER_API_KEY ? '***PRESENT***' : 'MISSING',
+    'process.env.EXPO_PUBLIC_OPENWEATHER_API_KEY': process.env.EXPO_PUBLIC_OPENWEATHER_API_KEY ? '***PRESENT***' : 'MISSING',
+  });
+
   const apiKey = (Constants?.expoConfig?.extra as any)?.openWeatherApiKey as string | undefined;
+  console.log('🔑 API Key being used:', apiKey ? '***PRESENT***' : 'MISSING!');
 
   async function loadAirQuality() {
     setError(null);
