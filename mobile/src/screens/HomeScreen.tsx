@@ -7,39 +7,64 @@ import {
   SafeAreaView,
   StatusBar,
   ActivityIndicator,
+  TouchableOpacity,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import AirQualityApiService, { AirQualityData } from '../services/airQualityApi';
+import LocationService, { LocationWithDetails } from '../services/locationService';
 
 const HomeScreen = () => {
   const [airQualityData, setAirQualityData] = useState<AirQualityData | null>(null);
+  const [userLocation, setUserLocation] = useState<LocationWithDetails | null>(null);
   const [loading, setLoading] = useState(true);
+  const [locationLoading, setLocationLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Houston coordinates - in production, this would come from GPS
-  const defaultCoordinates = { latitude: 29.7604, longitude: -95.3698 };
-
   useEffect(() => {
-    loadAirQualityData();
+    loadLocationAndAirQuality();
   }, []);
 
-  const loadAirQualityData = async () => {
+  const loadLocationAndAirQuality = async () => {
     try {
       setLoading(true);
+      setLocationLoading(true);
       setError(null);
 
+      console.log('📍 Starting location and air quality fetch...');
+
+      // Get user's current location
+      let location = await LocationService.getCurrentLocationWithDetails();
+
+      if (!location) {
+        console.log('📍 Using fallback location (Houston)');
+        location = LocationService.getFallbackLocation();
+      }
+
+      setUserLocation(location);
+      setLocationLoading(false);
+
+      // Get air quality for the location
       const data = await AirQualityApiService.getCurrentAirQuality(
-        defaultCoordinates.latitude,
-        defaultCoordinates.longitude
+        location.latitude,
+        location.longitude
       );
 
       setAirQualityData(data);
     } catch (err) {
-      setError('Failed to load air quality data');
-      console.error('Air quality data error:', err);
+      setError('Failed to load data');
+      console.error('Location/Air quality error:', err);
+
+      // Use fallback location if everything fails
+      const fallbackLocation = LocationService.getFallbackLocation();
+      setUserLocation(fallbackLocation);
+      setLocationLoading(false);
     } finally {
       setLoading(false);
     }
+  };
+
+  const refreshLocation = async () => {
+    await loadLocationAndAirQuality();
   };
 
   if (loading) {
@@ -96,7 +121,8 @@ const HomeScreen = () => {
   };
 
   const statusDisplay = getStatusDisplay(airQualityData.status);
-  const locationText = `${airQualityData.location.area}, ${airQualityData.location.state}`;
+  const locationText = userLocation?.formattedAddress || `${airQualityData.location.area}, ${airQualityData.location.state}`;
+  const coordinatesText = userLocation?.coordinatesDisplay || '';
 
   const getStatusIcon = (status: string) => {
     switch (status) {
@@ -120,11 +146,19 @@ const HomeScreen = () => {
         <Text style={styles.appTitle}>AirWise</Text>
         <Text style={styles.subtitle}>Your Lung Health Companion</Text>
 
-        {/* Location Chip */}
-        <View style={styles.locationChip}>
-          <Ionicons name="location" size={16} color="#FF5722" />
-          <Text style={styles.locationText}>{locationText}</Text>
-        </View>
+        {/* Location Section */}
+        <TouchableOpacity style={styles.locationContainer} onPress={refreshLocation}>
+          <View style={styles.locationChip}>
+            <Ionicons name="location" size={16} color="#FF5722" />
+            <Text style={styles.locationText}>{locationText}</Text>
+            {locationLoading && (
+              <ActivityIndicator size="small" color="white" style={styles.locationSpinner} />
+            )}
+          </View>
+          {coordinatesText && (
+            <Text style={styles.coordinatesText}>{coordinatesText}</Text>
+          )}
+        </TouchableOpacity>
       </View>
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
@@ -235,6 +269,9 @@ const styles = StyleSheet.create({
     opacity: 0.9,
     marginBottom: 20,
   },
+  locationContainer: {
+    alignItems: 'center',
+  },
   locationChip: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -242,12 +279,21 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 20,
+    marginBottom: 4,
   },
   locationText: {
     color: 'white',
     marginLeft: 6,
     fontSize: 14,
     fontWeight: '600',
+  },
+  locationSpinner: {
+    marginLeft: 8,
+  },
+  coordinatesText: {
+    color: 'rgba(255,255,255,0.8)',
+    fontSize: 12,
+    fontWeight: '400',
   },
   content: {
     flex: 1,
