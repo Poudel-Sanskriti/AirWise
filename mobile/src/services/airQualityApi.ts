@@ -6,7 +6,7 @@ const getApiBaseUrl = () => {
   if (__DEV__) {
     // In development, use Expo's detected IP
     const expoHost = Constants.expoConfig?.hostUri?.split(':')[0];
-    return expoHost ? `http://${expoHost}:3000/api` : 'http://localhost:3000/api';
+    return expoHost ? `http://${expoHost}:3001/api` : 'http://localhost:3001/api';
   } else {
     // In production, use your deployed API
     return 'https://your-production-api.com/api';

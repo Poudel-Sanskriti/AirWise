@@ -1,14 +1,19 @@
+// Load environment variables FIRST before any other imports
+import dotenv from 'dotenv';
+import path from 'path';
+dotenv.config({ path: path.resolve(__dirname, '../.env') });
+
+// Debug: Check if environment variables are loaded
+console.log('🔍 Debug - ENV loaded. GEMINI_API_KEY:', process.env.GEMINI_API_KEY ? `${process.env.GEMINI_API_KEY.substring(0, 10)}...` : 'undefined');
+
+// Now import other modules that might use environment variables
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
-import dotenv from 'dotenv';
 import mongoose from 'mongoose';
 import rateLimit from 'express-rate-limit';
-import path from 'path';
 import airQualityRoutes from './routes/airQuality';
-
-// Load environment variables
-dotenv.config();
+import recommendationsRoutes from './routes/recommendations';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -42,6 +47,7 @@ app.get('/health', (req, res) => {
 
 // API routes
 app.use('/api/air-quality', airQualityRoutes);
+app.use('/api/recommendations', recommendationsRoutes);
 
 app.get('/api/v1/test', (req, res) => {
   res.json({ message: 'AirWise API is running!' });
