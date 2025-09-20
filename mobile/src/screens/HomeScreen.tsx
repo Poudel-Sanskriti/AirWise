@@ -26,26 +26,28 @@ interface SavedPlace {
 }
 
 interface HomeScreenProps {
-  navigation: any;
-  route: any;
+  selectedPlace?: SavedPlace | null;
+  onClearSelectedPlace?: () => void;
 }
 
-const HomeScreen = ({ navigation, route }: HomeScreenProps) => {
-  // Get selectedPlace from route params if available
-  const selectedPlace = route.params?.selectedPlace;
-  const [airQualityData, setAirQualityData] = React.useState<AirQualityData | null>(null);
-  const [userLocation, setUserLocation] = React.useState<LocationWithDetails | null>(null);
-  const [loading, setLoading] = React.useState(true);
-  const [locationLoading, setLocationLoading] = React.useState(true);
-  const [error, setError] = React.useState<string | null>(null);
+const HomeScreen: React.FC<HomeScreenProps> = ({ selectedPlace, onClearSelectedPlace }) => {
+  const [airQualityData, setAirQualityData] = useState<AirQualityData | null>(null);
+  const [userLocation, setUserLocation] = useState<LocationWithDetails | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [locationLoading, setLocationLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Safely handle undefined props with defaults
+  const safeSelectedPlace = selectedPlace || null;
+  const safeOnClearSelectedPlace = onClearSelectedPlace || (() => { });
 
   useEffect(() => {
-    if (selectedPlace) {
+    if (safeSelectedPlace) {
       loadSelectedPlaceAirQuality();
     } else {
       loadLocationAndAirQuality();
     }
-  }, [selectedPlace]);
+  }, [safeSelectedPlace]);
 
   const loadLocationAndAirQuality = async () => {
     try {
@@ -87,30 +89,30 @@ const HomeScreen = ({ navigation, route }: HomeScreenProps) => {
   };
 
   const loadSelectedPlaceAirQuality = async () => {
-    if (!selectedPlace) return;
+    if (!safeSelectedPlace) return;
 
     try {
       setLoading(true);
       setLocationLoading(false);
       setError(null);
 
-      console.log(`📍 Loading air quality for ${selectedPlace.name}...`);
+      console.log(`📍 Loading air quality for ${safeSelectedPlace.name}...`);
 
       // Convert savedPlace to location format
       const location: LocationWithDetails = {
-        latitude: selectedPlace.latitude,
-        longitude: selectedPlace.longitude,
+        latitude: safeSelectedPlace.latitude,
+        longitude: safeSelectedPlace.longitude,
         timestamp: Date.now(),
-        formattedAddress: selectedPlace.address,
-        coordinatesDisplay: `${selectedPlace.latitude.toFixed(4)}°${selectedPlace.latitude >= 0 ? 'N' : 'S'}, ${Math.abs(selectedPlace.longitude).toFixed(4)}°${selectedPlace.longitude >= 0 ? 'E' : 'W'}`,
+        formattedAddress: safeSelectedPlace.address,
+        coordinatesDisplay: `${safeSelectedPlace.latitude.toFixed(4)}°${safeSelectedPlace.latitude >= 0 ? 'N' : 'S'}, ${Math.abs(safeSelectedPlace.longitude).toFixed(4)}°${safeSelectedPlace.longitude >= 0 ? 'E' : 'W'}`,
       };
 
       setUserLocation(location);
 
       // Get air quality for the selected place
       const data = await AirQualityApiService.getCurrentAirQuality(
-        selectedPlace.latitude,
-        selectedPlace.longitude
+        safeSelectedPlace.latitude,
+        safeSelectedPlace.longitude
       );
 
       setAirQualityData(data);
@@ -123,7 +125,7 @@ const HomeScreen = ({ navigation, route }: HomeScreenProps) => {
   };
 
   const refreshLocation = async () => {
-    if (selectedPlace) {
+    if (safeSelectedPlace) {
       await loadSelectedPlaceAirQuality();
     } else {
       await loadLocationAndAirQuality();
@@ -184,9 +186,9 @@ const HomeScreen = ({ navigation, route }: HomeScreenProps) => {
   };
 
   const statusDisplay = getStatusDisplay(airQualityData.status);
-  const locationText = selectedPlace ? selectedPlace.name : (userLocation?.formattedAddress || `${airQualityData.location.area}, ${airQualityData.location.state}`);
+  const locationText = safeSelectedPlace ? safeSelectedPlace.name : (userLocation?.formattedAddress || `${airQualityData.location.area}, ${airQualityData.location.state}`);
   const coordinatesText = userLocation?.coordinatesDisplay || '';
-  const showBackButton = !!selectedPlace;
+  const showBackButton = !!safeSelectedPlace;
 
   const getStatusIcon = (status: string) => {
     switch (status) {
@@ -208,7 +210,7 @@ const HomeScreen = ({ navigation, route }: HomeScreenProps) => {
       {/* Header */}
       <View style={styles.header}>
         {showBackButton && (
-          <TouchableOpacity style={styles.backButton} onPress={onClearSelectedPlace}>
+          <TouchableOpacity style={styles.backButton} onPress={safeOnClearSelectedPlace}>
             <Ionicons name="arrow-back" size={24} color="white" />
             <Text style={styles.backButtonText}>Back to Current Location</Text>
           </TouchableOpacity>
@@ -216,14 +218,14 @@ const HomeScreen = ({ navigation, route }: HomeScreenProps) => {
 
         <Text style={styles.appTitle}>AirWise</Text>
         <Text style={styles.subtitle}>
-          {selectedPlace ? `Air Quality for ${selectedPlace.name}` : 'Your Lung Health Companion'}
+          {safeSelectedPlace ? `Air Quality for ${safeSelectedPlace.name}` : 'Your Lung Health Companion'}
         </Text>
 
         {/* Location Section */}
         <TouchableOpacity style={styles.locationContainer} onPress={refreshLocation}>
           <View style={styles.locationChip}>
             <Ionicons
-              name={selectedPlace ? selectedPlace.icon : "location"}
+              name={safeSelectedPlace ? safeSelectedPlace.icon : "location"}
               size={16}
               color="#FF5722"
             />
@@ -235,8 +237,8 @@ const HomeScreen = ({ navigation, route }: HomeScreenProps) => {
           {coordinatesText && (
             <Text style={styles.coordinatesText}>{coordinatesText}</Text>
           )}
-          {selectedPlace && (
-            <Text style={styles.coordinatesText}>{selectedPlace.address}</Text>
+          {safeSelectedPlace && (
+            <Text style={styles.coordinatesText}>{safeSelectedPlace.address}</Text>
           )}
         </TouchableOpacity>
       </View>

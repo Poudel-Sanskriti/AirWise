@@ -4,9 +4,10 @@ import Constants from 'expo-constants';
 // Automatically detect the development server IP from Expo
 const getApiBaseUrl = () => {
   if (__DEV__) {
-    // In development, use Expo's detected IP
-    const expoHost = Constants.expoConfig?.hostUri?.split(':')[0];
-    return expoHost ? `http://${expoHost}:3000/api` : 'http://localhost:3000/api';
+    // For iOS simulator or real device with Expo Go
+    // Use the actual computer's local IP address where the backend is running
+    // This must match where you're running the backend server
+    return 'http://localhost:3000/api';
   } else {
     // In production, use your deployed API
     return 'https://your-production-api.com/api';
@@ -52,13 +53,20 @@ class AirQualityApiService {
       const requestUrl = `${API_BASE_URL}/air-quality/current?lat=${latitude}&lon=${longitude}`;
       console.log(`📱 Making request to: ${requestUrl}`);
 
+      // Set up an AbortController for a timeout
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+
       const response = await fetch(requestUrl, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
         },
-        timeout: 10000,
+        signal: controller.signal,
       });
+
+      // Clear the timeout if the fetch completes in time
+      clearTimeout(timeoutId);
 
       console.log(`📱 Response status: ${response.status} ${response.statusText}`);
 

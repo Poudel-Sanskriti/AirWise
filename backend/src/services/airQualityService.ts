@@ -52,8 +52,11 @@ class AirQualityService {
     try {
       // Get API key fresh from environment each time it's used
       const apiKey = process.env.EPA_AIRNOW_API_KEY;
-      if (!apiKey) {
-        throw new Error('EPA AirNow API key not configured');
+
+      // If the API key is not configured or is the test key, use mock data
+      if (!apiKey || apiKey === 'test_key_for_development') {
+        console.log('⚠️ Using mock data because no valid EPA API key is configured');
+        return this.getMockAirQualityData(latitude, longitude);
       }
 
       console.log(`🔍 Fetching air quality for coordinates: ${latitude}, ${longitude}`);

@@ -13,9 +13,9 @@ import {
   Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import MapView, { Marker } from 'react-native-maps';
 import AirQualityApiService from '../services/airQualityApi';
 import LocationService from '../services/locationService';
+import MapComponent from '../components/MapComponent';
 
 interface SavedPlace {
   id: string;
@@ -30,8 +30,7 @@ interface SavedPlace {
 }
 
 interface SavedPlacesScreenProps {
-  navigation: any;
-  route: any;
+  onPlaceSelect?: (place: SavedPlace) => void;
 }
 
 interface PlaceOption {
@@ -47,20 +46,20 @@ const PLACE_OPTIONS: PlaceOption[] = [
   { name: 'Custom', icon: 'location' },
 ];
 
-const SavedPlacesScreen: React.FC<SavedPlacesScreenProps> = ({ navigation, route }) => {
-  const [savedPlaces, setSavedPlaces] = React.useState<SavedPlace[]>([]);
-  const [isInitialized, setIsInitialized] = React.useState(false);
-  const [loadingPlaceId, setLoadingPlaceId] = React.useState<string | null>(null);
+const SavedPlacesScreen: React.FC<SavedPlacesScreenProps> = ({ onPlaceSelect }) => {
+  const [savedPlaces, setSavedPlaces] = useState<SavedPlace[]>([]);
+  const [isInitialized, setIsInitialized] = useState(false);
+  const [loadingPlaceId, setLoadingPlaceId] = useState<string | null>(null);
 
-  const [userLocation, setUserLocation] = React.useState<{ latitude: number; longitude: number } | null>(null);
+  const [userLocation, setUserLocation] = useState<{ latitude: number; longitude: number } | null>(null);
 
   // Add Place Modal state
-  const [showAddPlaceModal, setShowAddPlaceModal] = React.useState(false);
-  const [selectedPlaceOption, setSelectedPlaceOption] = React.useState<PlaceOption>(PLACE_OPTIONS[0]);
-  const [customPlaceName, setCustomPlaceName] = React.useState('');
-  const [isAddingPlace, setIsAddingPlace] = React.useState(false);
+  const [showAddPlaceModal, setShowAddPlaceModal] = useState(false);
+  const [selectedPlaceOption, setSelectedPlaceOption] = useState<PlaceOption>(PLACE_OPTIONS[0]);
+  const [customPlaceName, setCustomPlaceName] = useState('');
+  const [isAddingPlace, setIsAddingPlace] = useState(false);
 
-  React.useEffect(() => {
+  useEffect(() => {
     initializeWithCurrentLocation();
   }, []);
 
@@ -263,9 +262,11 @@ const SavedPlacesScreen: React.FC<SavedPlacesScreenProps> = ({ navigation, route
   };
 
   const handlePlacePress = (place: SavedPlace) => {
-    // Navigate to the Home screen with this place
-    navigation.navigate('Home', { selectedPlace: place });
-    refreshPlaceAirQuality(place);
+    if (onPlaceSelect) {
+      onPlaceSelect(place);
+    } else {
+      refreshPlaceAirQuality(place);
+    }
   };
 
   const renderSavedPlace = (place: SavedPlace) => (
@@ -314,32 +315,7 @@ const SavedPlacesScreen: React.FC<SavedPlacesScreenProps> = ({ navigation, route
       <StatusBar barStyle="dark-content" backgroundColor="#f5f5f5" />
 
       <ScrollView style={styles.contentContainer} showsVerticalScrollIndicator={false}>
-        {userLocation ? (
-          <View style={styles.mapContainer}>
-            <MapView
-              style={styles.map}
-              region={{
-                latitude: userLocation.latitude,
-                longitude: userLocation.longitude,
-                latitudeDelta: 0.04, // Controls zoom level
-                longitudeDelta: 0.02, // Controls zoom level
-              }}
-              showsUserLocation
-              loadingEnabled
-            >
-              <Marker
-                coordinate={userLocation}
-                title="Your Location"
-                description="This is your current position."
-              />
-            </MapView>
-          </View>
-        ) : (
-          <View style={styles.mapContainer}>
-            <ActivityIndicator size="large" color="#666" />
-            <Text style={{ marginTop: 10, color: '#666' }}>Finding your location...</Text>
-          </View>
-        )}
+        <MapComponent userLocation={userLocation} style={styles.mapContainer} />
 
         <View style={styles.header}>
           <Text style={styles.headerTitle}>Saved Places</Text>
@@ -456,7 +432,11 @@ const styles = StyleSheet.create({
   },
   // 3. ADDED: The style for the MapView component itself.
   map: {
-    ...StyleSheet.absoluteFillObject, // This makes the map fill its container
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
   },
   // 4. MODIFIED: The header no longer needs a background or border,
   // since the main view provides the background color.
