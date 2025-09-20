@@ -256,6 +256,11 @@ export default function HomeScreen() {
         throw new Error(`Network error: ${res.status}`);
       }
       const data: AirQualityResponse = await res.json();
+      console.log('🔍 FULL API RESPONSE FROM OPENWEATHER:');
+      console.log('=====================================');
+      console.log(JSON.stringify(data, null, 2));
+      console.log('=====================================');
+      
       console.log('✅ Air quality data received:', {
         aqi: data.list[0]?.main.aqi,
         pm25: data.list[0]?.components.pm2_5,
