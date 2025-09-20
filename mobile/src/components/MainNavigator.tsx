@@ -4,11 +4,12 @@ import HomeScreen from '../screens/HomeScreen';
 import RunCoachScreen from '../screens/RunCoachScreen';
 import SavedPlacesScreen from '../screens/SavedPlacesScreen';
 import BottomNavigation from './BottomNavigation';
+import { Ionicons } from '@expo/vector-icons';
 
 interface SavedPlace {
   id: string;
   name: string;
-  icon: keyof typeof import('@expo/vector-icons').Ionicons.glyphMap;
+  icon: keyof typeof Ionicons.glyphMap;
   address: string;
   latitude: number;
   longitude: number;
@@ -17,14 +18,16 @@ interface SavedPlace {
   lastUpdated?: string;
 }
 
-const SettingsScreen = () => (
-  <View style={styles.placeholderScreen}>
-    <Text style={styles.placeholderText}>Settings Screen</Text>
-    <Text style={styles.placeholderSubtext}>Coming Soon</Text>
-  </View>
-);
+const SettingsScreen: React.FC = () => {
+  return (
+    <View style={styles.placeholderScreen}>
+      <Text style={styles.placeholderText}>Settings Screen</Text>
+      <Text style={styles.placeholderSubtext}>Coming Soon</Text>
+    </View>
+  );
+};
 
-const MainNavigator = () => {
+const MainNavigator: React.FC = () => {
   const [activeTab, setActiveTab] = useState('home');
   const [selectedPlace, setSelectedPlace] = useState<SavedPlace | null>(null);
 

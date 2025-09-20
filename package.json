@@ -31,5 +31,8 @@
     "idso-challenge"
   ],
   "author": "AirWise Team",
-  "license": "MIT"
+  "license": "MIT",
+  "dependencies": {
+    "react-native-maps": "^1.26.6"
+  }
 }

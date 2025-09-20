@@ -26,16 +26,18 @@ interface SavedPlace {
 }
 
 interface HomeScreenProps {
-  selectedPlace?: SavedPlace | null;
-  onClearSelectedPlace?: () => void;
+  navigation: any;
+  route: any;
 }
 
-const HomeScreen: React.FC<HomeScreenProps> = ({ selectedPlace, onClearSelectedPlace }) => {
-  const [airQualityData, setAirQualityData] = useState<AirQualityData | null>(null);
-  const [userLocation, setUserLocation] = useState<LocationWithDetails | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [locationLoading, setLocationLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+const HomeScreen = ({ navigation, route }: HomeScreenProps) => {
+  // Get selectedPlace from route params if available
+  const selectedPlace = route.params?.selectedPlace;
+  const [airQualityData, setAirQualityData] = React.useState<AirQualityData | null>(null);
+  const [userLocation, setUserLocation] = React.useState<LocationWithDetails | null>(null);
+  const [loading, setLoading] = React.useState(true);
+  const [locationLoading, setLocationLoading] = React.useState(true);
+  const [error, setError] = React.useState<string | null>(null);
 
   useEffect(() => {
     if (selectedPlace) {

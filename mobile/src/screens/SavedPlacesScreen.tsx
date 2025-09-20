@@ -13,6 +13,7 @@ import {
   Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import MapView, { Marker } from 'react-native-maps';
 import AirQualityApiService from '../services/airQualityApi';
 import LocationService from '../services/locationService';
 
@@ -29,7 +30,8 @@ interface SavedPlace {
 }
 
 interface SavedPlacesScreenProps {
-  onPlaceSelect?: (place: SavedPlace) => void;
+  navigation: any;
+  route: any;
 }
 
 interface PlaceOption {
@@ -45,18 +47,20 @@ const PLACE_OPTIONS: PlaceOption[] = [
   { name: 'Custom', icon: 'location' },
 ];
 
-const SavedPlacesScreen: React.FC<SavedPlacesScreenProps> = ({ onPlaceSelect }) => {
-  const [savedPlaces, setSavedPlaces] = useState<SavedPlace[]>([]);
-  const [isInitialized, setIsInitialized] = useState(false);
-  const [loadingPlaceId, setLoadingPlaceId] = useState<string | null>(null);
+const SavedPlacesScreen: React.FC<SavedPlacesScreenProps> = ({ navigation, route }) => {
+  const [savedPlaces, setSavedPlaces] = React.useState<SavedPlace[]>([]);
+  const [isInitialized, setIsInitialized] = React.useState(false);
+  const [loadingPlaceId, setLoadingPlaceId] = React.useState<string | null>(null);
+
+  const [userLocation, setUserLocation] = React.useState<{ latitude: number; longitude: number } | null>(null);
 
   // Add Place Modal state
-  const [showAddPlaceModal, setShowAddPlaceModal] = useState(false);
-  const [selectedPlaceOption, setSelectedPlaceOption] = useState<PlaceOption>(PLACE_OPTIONS[0]);
-  const [customPlaceName, setCustomPlaceName] = useState('');
-  const [isAddingPlace, setIsAddingPlace] = useState(false);
+  const [showAddPlaceModal, setShowAddPlaceModal] = React.useState(false);
+  const [selectedPlaceOption, setSelectedPlaceOption] = React.useState<PlaceOption>(PLACE_OPTIONS[0]);
+  const [customPlaceName, setCustomPlaceName] = React.useState('');
+  const [isAddingPlace, setIsAddingPlace] = React.useState(false);
 
-  useEffect(() => {
+  React.useEffect(() => {
     initializeWithCurrentLocation();
   }, []);
 
@@ -69,6 +73,9 @@ const SavedPlacesScreen: React.FC<SavedPlacesScreenProps> = ({ onPlaceSelect }) 
       const location = await LocationService.getCurrentLocationWithDetails();
 
       if (location) {
+
+        setUserLocation({ latitude: location.latitude, longitude: location.longitude });
+
         const currentLocationPlace: SavedPlace = {
           id: 'current-location',
           name: 'Current Location',
@@ -88,6 +95,8 @@ const SavedPlacesScreen: React.FC<SavedPlacesScreenProps> = ({ onPlaceSelect }) 
       } else {
         console.log('📍 Using fallback location for saved places');
         const fallbackLocation = LocationService.getFallbackLocation();
+
+        setUserLocation({ latitude: fallbackLocation.latitude, longitude: fallbackLocation.longitude });
 
         const fallbackPlace: SavedPlace = {
           id: 'fallback-location',
@@ -163,10 +172,10 @@ const SavedPlacesScreen: React.FC<SavedPlacesScreenProps> = ({ onPlaceSelect }) 
         prevPlaces.map(p =>
           p.id === place.id
             ? {
-                ...p,
-                currentStatus: newStatus,
-                lastUpdated: new Date().toLocaleTimeString(),
-              }
+              ...p,
+              currentStatus: newStatus,
+              lastUpdated: new Date().toLocaleTimeString(),
+            }
             : p
         )
       );
@@ -254,11 +263,9 @@ const SavedPlacesScreen: React.FC<SavedPlacesScreenProps> = ({ onPlaceSelect }) 
   };
 
   const handlePlacePress = (place: SavedPlace) => {
-    if (onPlaceSelect) {
-      onPlaceSelect(place);
-    } else {
-      refreshPlaceAirQuality(place);
-    }
+    // Navigate to the Home screen with this place
+    navigation.navigate('Home', { selectedPlace: place });
+    refreshPlaceAirQuality(place);
   };
 
   const renderSavedPlace = (place: SavedPlace) => (
@@ -306,21 +313,50 @@ const SavedPlacesScreen: React.FC<SavedPlacesScreenProps> = ({ onPlaceSelect }) 
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#f5f5f5" />
 
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Saved Places</Text>
-        <Text style={styles.headerSubtitle}>Tap any location for current air quality</Text>
-      </View>
+      <ScrollView style={styles.contentContainer} showsVerticalScrollIndicator={false}>
+        {userLocation ? (
+          <View style={styles.mapContainer}>
+            <MapView
+              style={styles.map}
+              region={{
+                latitude: userLocation.latitude,
+                longitude: userLocation.longitude,
+                latitudeDelta: 0.04, // Controls zoom level
+                longitudeDelta: 0.02, // Controls zoom level
+              }}
+              showsUserLocation
+              loadingEnabled
+            >
+              <Marker
+                coordinate={userLocation}
+                title="Your Location"
+                description="This is your current position."
+              />
+            </MapView>
+          </View>
+        ) : (
+          <View style={styles.mapContainer}>
+            <ActivityIndicator size="large" color="#666" />
+            <Text style={{ marginTop: 10, color: '#666' }}>Finding your location...</Text>
+          </View>
+        )}
 
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        {savedPlaces.map(renderSavedPlace)}
+        <View style={styles.header}>
+          <Text style={styles.headerTitle}>Saved Places</Text>
+          <Text style={styles.headerSubtitle}>Tap any location for current air quality</Text>
+        </View>
 
-        <TouchableOpacity
-          style={styles.addPlaceButton}
-          onPress={openAddPlaceModal}
-        >
-          <Ionicons name="add-circle" size={24} color="#4CAF50" />
-          <Text style={styles.addPlaceText}>Save Current Location</Text>
-        </TouchableOpacity>
+        <View style={styles.listContainer}>
+          {savedPlaces.map(renderSavedPlace)}
+
+          <TouchableOpacity
+            style={styles.addPlaceButton}
+            onPress={openAddPlaceModal}
+          >
+            <Ionicons name="add-circle" size={24} color="#4CAF50" />
+            <Text style={styles.addPlaceText}>Save Current Location</Text>
+          </TouchableOpacity>
+        </View>
       </ScrollView>
 
       {/* Add Place Modal */}
@@ -404,13 +440,39 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#f5f5f5',
   },
-  header: {
-    backgroundColor: 'white',
-    paddingHorizontal: 20,
-    paddingVertical: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
+  // --- ADDED/MODIFIED STYLES START HERE ---
+
+  // 1. RENAMED: `content` was renamed to `contentContainer` for the main ScrollView.
+  contentContainer: {
+    flex: 1,
   },
+  // 2. ADDED: A container for the map view.
+  mapContainer: {
+    height: 250,
+    backgroundColor: '#e0e0e0',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  // 3. ADDED: The style for the MapView component itself.
+  map: {
+    ...StyleSheet.absoluteFillObject, // This makes the map fill its container
+  },
+  // 4. MODIFIED: The header no longer needs a background or border,
+  // since the main view provides the background color.
+  header: {
+    backgroundColor: 'transparent',
+    paddingHorizontal: 20,
+    paddingBottom: 20,
+  },
+  // 5. ADDED: A new container for the list of places below the header.
+  listContainer: {
+    paddingHorizontal: 20,
+  },
+
+  // --- ADDED/MODIFIED STYLES END HERE ---
+  // (The rest of your styles from here were correct)
+
   headerTitle: {
     fontSize: 24,
     fontWeight: 'bold',
@@ -420,10 +482,6 @@ const styles = StyleSheet.create({
   headerSubtitle: {
     fontSize: 14,
     color: '#666',
-  },
-  content: {
-    flex: 1,
-    padding: 20,
   },
   placeCard: {
     backgroundColor: 'white',
@@ -492,6 +550,7 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: '#4CAF50',
     borderStyle: 'dashed',
+    marginBottom: 20,
   },
   addPlaceText: {
     fontSize: 16,
