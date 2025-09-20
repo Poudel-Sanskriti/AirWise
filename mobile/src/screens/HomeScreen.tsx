@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -6,27 +6,97 @@ import {
   ScrollView,
   SafeAreaView,
   StatusBar,
+  ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import AirQualityApiService, { AirQualityData } from '../services/airQualityApi';
 
 const HomeScreen = () => {
-  // Mock data - will be replaced with real API data
-  const mockData = {
-    location: 'Houston, TX',
-    status: 'CAUTION',
-    statusColor: '#FF8C00',
-    warningMessage: 'Elevated PM2.5 levels detected due to nearby construction activity - consider indoor exercise today.',
-    metrics: {
-      pm25: { value: 35, unit: 'μg/m³', color: '#FF8C00' },
-      pm10: { value: 42, unit: 'μg/m³', color: '#4CAF50' },
-      ozone: { value: 65, unit: 'ppb', color: '#4CAF50' },
-      no2: { value: 28, unit: 'ppb', color: '#4CAF50' },
-    },
-    additionalInfo: {
-      radonRisk: { level: 'Low', detail: 'Indoor', color: '#4CAF50' },
-      wildfire: { level: 'None', detail: 'Detected', color: '#4CAF50' },
+  const [airQualityData, setAirQualityData] = useState<AirQualityData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Houston coordinates - in production, this would come from GPS
+  const defaultCoordinates = { latitude: 29.7604, longitude: -95.3698 };
+
+  useEffect(() => {
+    loadAirQualityData();
+  }, []);
+
+  const loadAirQualityData = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const data = await AirQualityApiService.getCurrentAirQuality(
+        defaultCoordinates.latitude,
+        defaultCoordinates.longitude
+      );
+
+      setAirQualityData(data);
+    } catch (err) {
+      setError('Failed to load air quality data');
+      console.error('Air quality data error:', err);
+    } finally {
+      setLoading(false);
     }
   };
+
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <StatusBar barStyle="light-content" backgroundColor="#4CAF50" />
+        <View style={styles.header}>
+          <Text style={styles.appTitle}>AirWise</Text>
+          <Text style={styles.subtitle}>Your Lung Health Companion</Text>
+        </View>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#4CAF50" />
+          <Text style={styles.loadingText}>Loading air quality data...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (error || !airQualityData) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <StatusBar barStyle="light-content" backgroundColor="#4CAF50" />
+        <View style={styles.header}>
+          <Text style={styles.appTitle}>AirWise</Text>
+          <Text style={styles.subtitle}>Your Lung Health Companion</Text>
+        </View>
+        <View style={styles.errorContainer}>
+          <Ionicons name="warning" size={48} color="#FF5722" />
+          <Text style={styles.errorText}>{error || 'Unable to load data'}</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  // Convert API data to display format
+  const getStatusDisplay = (status: string) => {
+    const statusMap: Record<string, { text: string; color: string }> = {
+      good: { text: 'GOOD', color: '#4CAF50' },
+      moderate: { text: 'MODERATE', color: '#FF9800' },
+      unhealthy_sensitive: { text: 'CAUTION', color: '#FF8C00' },
+      unhealthy: { text: 'UNHEALTHY', color: '#FF5722' },
+      very_unhealthy: { text: 'VERY UNHEALTHY', color: '#9C27B0' },
+      hazardous: { text: 'HAZARDOUS', color: '#8B0000' },
+    };
+    return statusMap[status] || { text: 'UNKNOWN', color: '#666' };
+  };
+
+  const getMetricColor = (value?: number) => {
+    if (!value) return '#999';
+    if (value <= 50) return '#4CAF50';
+    if (value <= 100) return '#FF9800';
+    if (value <= 150) return '#FF8C00';
+    return '#FF5722';
+  };
+
+  const statusDisplay = getStatusDisplay(airQualityData.status);
+  const locationText = `${airQualityData.location.area}, ${airQualityData.location.state}`;
 
   const getStatusIcon = (status: string) => {
     switch (status) {
@@ -53,7 +123,7 @@ const HomeScreen = () => {
         {/* Location Chip */}
         <View style={styles.locationChip}>
           <Ionicons name="location" size={16} color="#FF5722" />
-          <Text style={styles.locationText}>{mockData.location}</Text>
+          <Text style={styles.locationText}>{locationText}</Text>
         </View>
       </View>
 
@@ -61,14 +131,14 @@ const HomeScreen = () => {
         {/* Risk Card */}
         <View style={styles.riskCard}>
           <View style={styles.statusSection}>
-            {getStatusIcon(mockData.status)}
-            <Text style={[styles.statusText, { color: mockData.statusColor }]}>
-              {mockData.status}
+            {getStatusIcon(statusDisplay.text)}
+            <Text style={[styles.statusText, { color: statusDisplay.color }]}>
+              {statusDisplay.text}
             </Text>
           </View>
 
           <Text style={styles.warningMessage}>
-            {mockData.warningMessage}
+            {airQualityData.recommendation}
           </Text>
         </View>
 
@@ -77,37 +147,37 @@ const HomeScreen = () => {
           {/* PM2.5 */}
           <View style={styles.metricCard}>
             <Text style={styles.metricLabel}>PM2.5</Text>
-            <Text style={[styles.metricValue, { color: mockData.metrics.pm25.color }]}>
-              {mockData.metrics.pm25.value}
+            <Text style={[styles.metricValue, { color: getMetricColor(airQualityData.measurements.pm25) }]}>
+              {airQualityData.measurements.pm25 || '--'}
             </Text>
-            <Text style={styles.metricUnit}>{mockData.metrics.pm25.unit}</Text>
+            <Text style={styles.metricUnit}>AQI</Text>
           </View>
 
           {/* PM10 */}
           <View style={styles.metricCard}>
             <Text style={styles.metricLabel}>PM10</Text>
-            <Text style={[styles.metricValue, { color: mockData.metrics.pm10.color }]}>
-              {mockData.metrics.pm10.value}
+            <Text style={[styles.metricValue, { color: getMetricColor(airQualityData.measurements.pm10) }]}>
+              {airQualityData.measurements.pm10 || '--'}
             </Text>
-            <Text style={styles.metricUnit}>{mockData.metrics.pm10.unit}</Text>
+            <Text style={styles.metricUnit}>AQI</Text>
           </View>
 
           {/* Ozone */}
           <View style={styles.metricCard}>
             <Text style={styles.metricLabel}>O₃</Text>
-            <Text style={[styles.metricValue, { color: mockData.metrics.ozone.color }]}>
-              {mockData.metrics.ozone.value}
+            <Text style={[styles.metricValue, { color: getMetricColor(airQualityData.measurements.ozone) }]}>
+              {airQualityData.measurements.ozone || '--'}
             </Text>
-            <Text style={styles.metricUnit}>{mockData.metrics.ozone.unit}</Text>
+            <Text style={styles.metricUnit}>AQI</Text>
           </View>
 
-          {/* NO2 */}
+          {/* Overall AQI */}
           <View style={styles.metricCard}>
-            <Text style={styles.metricLabel}>NO₂</Text>
-            <Text style={[styles.metricValue, { color: mockData.metrics.no2.color }]}>
-              {mockData.metrics.no2.value}
+            <Text style={styles.metricLabel}>Overall</Text>
+            <Text style={[styles.metricValue, { color: getMetricColor(airQualityData.measurements.overall_aqi) }]}>
+              {airQualityData.measurements.overall_aqi}
             </Text>
-            <Text style={styles.metricUnit}>{mockData.metrics.no2.unit}</Text>
+            <Text style={styles.metricUnit}>AQI</Text>
           </View>
         </View>
 
@@ -116,22 +186,22 @@ const HomeScreen = () => {
           {/* Radon Risk */}
           <View style={styles.additionalCard}>
             <Text style={styles.additionalLabel}>Radon Risk</Text>
-            <Text style={[styles.additionalValue, { color: mockData.additionalInfo.radonRisk.color }]}>
-              {mockData.additionalInfo.radonRisk.level}
+            <Text style={[styles.additionalValue, { color: '#4CAF50' }]}>
+              Low
             </Text>
             <Text style={styles.additionalDetail}>
-              {mockData.additionalInfo.radonRisk.detail}
+              Indoor
             </Text>
           </View>
 
           {/* Wildfire */}
           <View style={styles.additionalCard}>
             <Text style={styles.additionalLabel}>Wildfire</Text>
-            <Text style={[styles.additionalValue, { color: mockData.additionalInfo.wildfire.color }]}>
-              {mockData.additionalInfo.wildfire.level}
+            <Text style={[styles.additionalValue, { color: '#4CAF50' }]}>
+              None
             </Text>
             <Text style={styles.additionalDetail}>
-              {mockData.additionalInfo.wildfire.detail}
+              Detected
             </Text>
           </View>
         </View>
@@ -273,6 +343,29 @@ const styles = StyleSheet.create({
   additionalDetail: {
     fontSize: 12,
     color: '#999',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 40,
+  },
+  loadingText: {
+    marginTop: 16,
+    fontSize: 16,
+    color: '#666',
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 40,
+  },
+  errorText: {
+    marginTop: 16,
+    fontSize: 16,
+    color: '#666',
+    textAlign: 'center',
   },
 });
 

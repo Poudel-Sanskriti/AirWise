@@ -4,7 +4,10 @@ import helmet from 'helmet';
 import dotenv from 'dotenv';
 import mongoose from 'mongoose';
 import rateLimit from 'express-rate-limit';
+import path from 'path';
+import airQualityRoutes from './routes/airQuality';
 
+// Load environment variables
 dotenv.config();
 
 const app = express();
@@ -37,7 +40,9 @@ app.get('/health', (req, res) => {
   });
 });
 
-// API routes will be added here
+// API routes
+app.use('/api/air-quality', airQualityRoutes);
+
 app.get('/api/v1/test', (req, res) => {
   res.json({ message: 'AirWise API is running!' });
 });
