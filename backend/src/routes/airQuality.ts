@@ -1,8 +1,7 @@
 import { Router, Request, Response } from 'express';
-import AirQualityService from '../services/airQualityService';
+import airQualityService from '../services/airQualityService';
 
 const router = Router();
-const airQualityService = new AirQualityService();
 
 // GET /api/air-quality/current?lat=29.7604&lon=-95.3698
 router.get('/current', async (req: Request, res: Response) => {

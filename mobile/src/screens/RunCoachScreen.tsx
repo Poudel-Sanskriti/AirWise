@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -7,26 +7,80 @@ import {
   SafeAreaView,
   TouchableOpacity,
   StatusBar,
+  ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import RecommendationsApi from '../services/recommendationsApi';
+import LocationService from '../services/locationService';
+
+interface RunRecommendation {
+  recommendation: string;
+  safetyLevel: 'safe' | 'caution' | 'avoid';
+  suggestedDuration: string;
+  bestTime: string;
+  precautions: string[];
+  alternativeActivities?: string[];
+}
 
 const RunCoachScreen = () => {
   const [activeTab, setActiveTab] = useState('Overview');
+  const [aiRecommendation, setAiRecommendation] = useState<RunRecommendation | null>(null);
+  const [healthInsights, setHealthInsights] = useState<string[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const tabs = ['Overview', 'Places', 'Profile'];
 
-  const runRecommendations = {
-    direction: {
-      title: 'Best Direction: Northwest',
-      description: 'Lower traffic density and better air circulation'
-    },
-    time: {
-      title: 'Optimal Time: 6:00 - 8:00 AM',
-      description: 'Cooler temps and improved air quality expected'
-    },
-    duration: {
-      title: 'Suggested Duration: 25-30 minutes',
-      description: 'Moderate intensity recommended due to current conditions'
+  useEffect(() => {
+    loadAIRecommendations();
+  }, []);
+
+  const loadAIRecommendations = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      console.log('🤖 Loading AI recommendations...');
+
+      // Get current location
+      let location = await LocationService.getCurrentLocationWithDetails();
+      if (!location) {
+        location = LocationService.getFallbackLocation();
+      }
+
+      // Example user profile - in real app this would come from user settings
+      const userProfile = {
+        healthConditions: ['none'], // Could be ['asthma', 'pregnancy', etc.]
+        ageGroup: 'adult' as const,
+        fitnessLevel: 'moderate' as const,
+        outdoorActivities: ['running', 'cycling'],
+        sensitivities: []
+      };
+
+      // Get AI recommendation
+      const recommendation = await RecommendationsApi.getRunRecommendation(
+        location.latitude,
+        location.longitude,
+        userProfile
+      );
+
+      // Get health insights
+      const insights = await RecommendationsApi.getHealthInsights(
+        location.latitude,
+        location.longitude,
+        userProfile
+      );
+
+      setAiRecommendation(recommendation);
+      setHealthInsights(insights);
+
+      console.log('✅ AI recommendations loaded:', recommendation.safetyLevel);
+
+    } catch (err) {
+      console.error('❌ Error loading AI recommendations:', err);
+      setError('Failed to load AI recommendations');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -38,42 +92,62 @@ const RunCoachScreen = () => {
 
   const renderTabContent = () => {
     if (activeTab === 'Overview') {
+      if (loading) {
+        return (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color="#6366F1" />
+            <Text style={styles.loadingText}>Loading AI recommendations...</Text>
+          </View>
+        );
+      }
+
+      if (error) {
+        return (
+          <View style={styles.errorContainer}>
+            <Text style={styles.errorText}>{error}</Text>
+            <TouchableOpacity style={styles.retryButton} onPress={loadAIRecommendations}>
+              <Text style={styles.retryButtonText}>Retry</Text>
+            </TouchableOpacity>
+          </View>
+        );
+      }
+
       return (
         <ScrollView style={styles.tabContent} showsVerticalScrollIndicator={false}>
-          {/* Smart Run Coach Card */}
+          {/* AI-Powered Smart Run Coach Card */}
           <View style={styles.runCoachCard}>
             <View style={styles.runCoachHeader}>
               <Ionicons name="walk" size={24} color="white" />
-              <Text style={styles.runCoachTitle}>Smart Run Coach</Text>
+              <Text style={styles.runCoachTitle}>AI Smart Run Coach</Text>
             </View>
 
-            {/* Direction Recommendation */}
+            {/* AI Recommendation */}
             <View style={styles.recommendationCard}>
               <Text style={styles.recommendationTitle}>
-                {runRecommendations.direction.title}
+                🤖 AI Recommendation
               </Text>
               <Text style={styles.recommendationDescription}>
-                {runRecommendations.direction.description}
-              </Text>
-            </View>
-
-            {/* Time Recommendation */}
-            <View style={styles.recommendationCard}>
-              <Text style={styles.recommendationTitle}>
-                {runRecommendations.time.title}
-              </Text>
-              <Text style={styles.recommendationDescription}>
-                {runRecommendations.time.description}
+                {aiRecommendation?.recommendation || 'Loading AI recommendation...'}
               </Text>
             </View>
 
-            {/* Duration Recommendation */}
+            {/* Safety & Duration */}
             <View style={styles.recommendationCard}>
               <Text style={styles.recommendationTitle}>
-                {runRecommendations.duration.title}
+                Safety: {aiRecommendation?.safetyLevel.toUpperCase() || 'Loading...'}
               </Text>
               <Text style={styles.recommendationDescription}>
-                {runRecommendations.duration.description}
+                Duration: {aiRecommendation?.suggestedDuration || 'Loading...'}
+              </Text>
+            </View>
+
+            {/* Best Time */}
+            <View style={styles.recommendationCard}>
+              <Text style={styles.recommendationTitle}>
+                Best Time: {aiRecommendation?.bestTime || 'Loading...'}
+              </Text>
+              <Text style={styles.recommendationDescription}>
+                {aiRecommendation?.precautions[0] || 'Loading precautions...'}
               </Text>
             </View>
           </View>
@@ -247,6 +321,41 @@ const styles = StyleSheet.create({
   placeholderSubtext: {
     fontSize: 16,
     color: '#666',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 40,
+  },
+  loadingText: {
+    marginTop: 16,
+    fontSize: 16,
+    color: '#666',
+    textAlign: 'center',
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 40,
+  },
+  errorText: {
+    fontSize: 16,
+    color: '#FF5722',
+    textAlign: 'center',
+    marginBottom: 20,
+  },
+  retryButton: {
+    backgroundColor: '#6366F1',
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 8,
+  },
+  retryButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '600',
   },
 });
 

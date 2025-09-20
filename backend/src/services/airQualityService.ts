@@ -187,4 +187,4 @@ class AirQualityService {
   }
 }
 
-export default AirQualityService;
+export default new AirQualityService();

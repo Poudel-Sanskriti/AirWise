@@ -299,7 +299,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ selectedPlace, onClearSelectedP
           <View style={styles.additionalCard}>
             <Text style={styles.additionalLabel}>Radon Risk</Text>
             <Text style={[styles.additionalValue, { color: '#4CAF50' }]}>
-              Low
+              {airQualityData.radonRisk || 'Low'}
             </Text>
             <Text style={styles.additionalDetail}>
               Indoor
@@ -310,7 +310,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ selectedPlace, onClearSelectedP
           <View style={styles.additionalCard}>
             <Text style={styles.additionalLabel}>Wildfire</Text>
             <Text style={[styles.additionalValue, { color: '#4CAF50' }]}>
-              None
+              {airQualityData.wildfireRisk || 'None'}
             </Text>
             <Text style={styles.additionalDetail}>
               Detected
