@@ -1,6 +1,7 @@
 import express from 'express';
 import GeminiService from '../services/geminiService';
 import airQualityService from '../services/airQualityService';
+import weatherService from '../services/weatherService';
 
 const router = express.Router();
 
@@ -28,19 +29,30 @@ router.post('/run-coach', async (req, res) => {
 
     console.log(`🏃 Generating run recommendation for ${latitude}, ${longitude}`);
 
-    // Get current air quality data
-    const airQualityData = await airQualityService.getCurrentAirQuality(latitude, longitude);
+    // Get current air quality and weather data in parallel
+    const [airQualityData, weatherData] = await Promise.all([
+      airQualityService.getCurrentAirQuality(latitude, longitude),
+      weatherService.getCurrentWeather(latitude, longitude)
+    ]);
 
-    // Prepare environmental data for Gemini
+    // Get UV Index if available
+    const uvIndex = await weatherService.getUVIndex(latitude, longitude);
+
+    // Prepare environmental data for Gemini with real weather data
     const environmentalData = {
       currentAQI: airQualityData.measurements.overall_aqi,
       pm25: airQualityData.measurements.pm25 || 0,
       pm10: airQualityData.measurements.pm10 || 0,
       ozone: airQualityData.measurements.ozone || 0,
-      temperature: 75, // TODO: Get from weather API
-      humidity: 60,    // TODO: Get from weather API
-      windSpeed: 5,    // TODO: Get from weather API
-      windDirection: 'NW', // TODO: Get from weather API
+      temperature: weatherData.current.temperature,
+      feelsLike: weatherData.current.feelsLike,
+      humidity: weatherData.current.humidity,
+      windSpeed: weatherData.wind.speed,
+      windDirection: weatherData.wind.directionText,
+      weatherCondition: weatherData.conditions.description,
+      visibility: weatherData.current.visibility,
+      cloudCover: weatherData.conditions.cloudCover,
+      uvIndex: uvIndex || weatherData.current.uvIndex,
       location: `${airQualityData.location.area}, ${airQualityData.location.state}`
     };
 

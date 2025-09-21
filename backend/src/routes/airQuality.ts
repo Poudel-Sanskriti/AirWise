@@ -1,5 +1,6 @@
 import { Router, Request, Response } from 'express';
 import airQualityService from '../services/airQualityService';
+import weatherService from '../services/weatherService';
 
 const router = Router();
 
@@ -35,16 +36,25 @@ router.get('/current', async (req: Request, res: Response) => {
       });
     }
 
-    console.log(`🌍 Air quality request for: ${latitude}, ${longitude}`);
+    console.log(`🌍 Air quality + weather request for: ${latitude}, ${longitude}`);
 
-    // Fetch air quality data
-    const airQualityData = await airQualityService.getCurrentAirQuality(latitude, longitude);
+    // Fetch both air quality and weather data in parallel
+    const [airQualityData, weatherData] = await Promise.all([
+      airQualityService.getCurrentAirQuality(latitude, longitude),
+      weatherService.getCurrentWeather(latitude, longitude)
+    ]);
 
-    // Success response
+    // Success response with combined data
     res.json({
       success: true,
-      data: airQualityData,
-      source: 'EPA AirNow API',
+      data: {
+        airQuality: airQualityData,
+        weather: weatherData
+      },
+      sources: {
+        airQuality: 'EPA AirNow API',
+        weather: 'OpenWeatherMap API'
+      },
       timestamp: new Date().toISOString()
     });
 

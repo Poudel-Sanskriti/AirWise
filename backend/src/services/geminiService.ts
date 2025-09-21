@@ -20,6 +20,10 @@ interface EnvironmentalData {
   uvIndex?: number;
   pollenCount?: number;
   location: string;
+  visibility?: number;
+  cloudCover?: number;
+  weatherCondition?: string;
+  feelsLike?: number;
 }
 
 interface RunRecommendation {
@@ -94,9 +98,12 @@ CURRENT CONDITIONS:
 - PM2.5: ${env.pm25} µg/m³
 - PM10: ${env.pm10} µg/m³
 - Ozone: ${env.ozone} µg/m³
-- Temperature: ${env.temperature}°F
+- Temperature: ${env.temperature}°F (Feels like: ${env.feelsLike || env.temperature}°F)
 - Humidity: ${env.humidity}%
 - Wind: ${env.windSpeed} mph ${env.windDirection}
+- Weather: ${env.weatherCondition || 'Clear'}
+${env.visibility ? `- Visibility: ${env.visibility} miles` : ''}
+${env.cloudCover ? `- Cloud Cover: ${env.cloudCover}%` : ''}
 ${env.uvIndex ? `- UV Index: ${env.uvIndex}` : ''}
 ${env.pollenCount ? `- Pollen Count: ${env.pollenCount}` : ''}
 
