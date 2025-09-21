@@ -41,10 +41,7 @@ const SettingsScreen = () => {
   }
 
   const settingsItems = [
-    { id: 'profile', title: 'Profile', icon: 'person-outline', onPress: () => console.log('Profile') },
-    { id: 'health', title: 'Health', icon: 'heart-outline', onPress: () => setShowOnboarding(true) },
-    { id: 'preferences', title: 'Preferences', icon: 'settings-outline', onPress: () => console.log('Preferences') },
-    { id: 'about', title: 'About', icon: 'information-circle-outline', onPress: () => console.log('About') },
+    { id: 'health', title: 'Health Profile', icon: 'heart-outline', onPress: () => setShowOnboarding(true) },
   ];
 
   if (loading) {
