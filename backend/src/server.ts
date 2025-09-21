@@ -14,6 +14,7 @@ import mongoose from 'mongoose';
 import rateLimit from 'express-rate-limit';
 import airQualityRoutes from './routes/airQuality';
 import recommendationsRoutes from './routes/recommendations';
+import usersRoutes from './routes/users';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -48,6 +49,7 @@ app.get('/health', (req, res) => {
 // API routes
 app.use('/api/air-quality', airQualityRoutes);
 app.use('/api/recommendations', recommendationsRoutes);
+app.use('/api/users', usersRoutes);
 
 app.get('/api/v1/test', (req, res) => {
   res.json({ message: 'AirWise API is running!' });
