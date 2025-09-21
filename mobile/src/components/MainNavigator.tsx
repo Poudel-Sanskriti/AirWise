@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, SafeAreaView, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../contexts/AuthContext';
+import HealthProfileOnboardingScreen from '../screens/HealthProfileOnboardingScreen';
 import HomeScreen from '../screens/HomeScreen';
 import RunCoachScreen from '../screens/RunCoachScreen';
 import SavedPlacesScreen from '../screens/SavedPlacesScreen';
@@ -21,10 +22,27 @@ interface SavedPlace {
 
 const SettingsScreen = () => {
   const { user, loading, signInWithGoogle, signOut } = useAuth();
+  const [showOnboarding, setShowOnboarding] = useState(false);
+
+  // Check if user needs onboarding (no health profile)
+  const needsOnboarding = user && (!user.healthProfile || !user.healthProfile.ageGroup);
+
+  const handleCompleteOnboarding = () => {
+    setShowOnboarding(false);
+  };
+
+  if (showOnboarding || needsOnboarding) {
+    return (
+      <HealthProfileOnboardingScreen
+        onComplete={handleCompleteOnboarding}
+        isEditing={showOnboarding} // true if manually opened, false if first-time onboarding
+      />
+    );
+  }
 
   const settingsItems = [
     { id: 'profile', title: 'Profile', icon: 'person-outline', onPress: () => console.log('Profile') },
-    { id: 'health', title: 'Health', icon: 'heart-outline', onPress: () => console.log('Health') },
+    { id: 'health', title: 'Health', icon: 'heart-outline', onPress: () => setShowOnboarding(true) },
     { id: 'preferences', title: 'Preferences', icon: 'settings-outline', onPress: () => console.log('Preferences') },
     { id: 'about', title: 'About', icon: 'information-circle-outline', onPress: () => console.log('About') },
   ];

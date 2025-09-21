@@ -74,6 +74,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     if (response?.type === 'success' && response.params.access_token) {
       handleAuthSuccess(response.params.access_token);
+    } else if (response?.type === 'cancel' || response?.type === 'dismiss') {
+      // User cancelled the auth flow
+      console.log('🚫 User cancelled authentication');
+      setLoading(false);
+    } else if (response?.type === 'error') {
+      // Auth error occurred
+      console.error('❌ Authentication error:', response.error);
+      setLoading(false);
     }
   }, [response]);
 
@@ -139,6 +147,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (response.ok) {
         const result = await response.json();
         console.log('User created/updated in backend:', result.data);
+
+        // Store the user ID from backend response
+        if (result.data._id) {
+          userData.id = result.data._id;
+        }
+
         return result.data;
       } else {
         console.warn('Failed to create user in backend:', response.status);
@@ -169,12 +183,41 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const updateUserProfile = (updates: Partial<User>) => {
+  const updateUserProfile = async (updates: Partial<User>) => {
     if (user) {
       const updatedUser = { ...user, ...updates };
       setUser(updatedUser);
-      AsyncStorage.setItem('user', JSON.stringify(updatedUser));
-      // TODO: Update in backend as well
+      await AsyncStorage.setItem('user', JSON.stringify(updatedUser));
+
+      // Update in backend database
+      await updateUserInBackend(updatedUser);
+    }
+  };
+
+  const updateUserInBackend = async (userData: User) => {
+    try {
+      const backendUrl = __DEV__
+        ? `http://${Constants.expoConfig?.hostUri?.split(':')[0]}:3001`
+        : 'https://your-production-api.com';
+
+      console.log('🔄 Updating user profile in backend...');
+
+      const response = await fetch(`${backendUrl}/api/users/${userData.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(userData),
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        console.log('✅ User profile updated in backend:', result.data);
+      } else {
+        console.warn('⚠️ Failed to update user profile in backend:', response.status);
+      }
+    } catch (error) {
+      console.error('❌ Error updating user profile in backend:', error);
     }
   };
 
