@@ -12,6 +12,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import RecommendationsApi from '../services/recommendationsApi';
 import LocationService from '../services/locationService';
+import { useAuth } from '../contexts/AuthContext';
 
 interface RunRecommendation {
   recommendation: string;
@@ -23,6 +24,7 @@ interface RunRecommendation {
 }
 
 const RunCoachScreen = () => {
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState('Overview');
   const [aiRecommendation, setAiRecommendation] = useState<RunRecommendation | null>(null);
   const [healthInsights, setHealthInsights] = useState<string[]>([]);
@@ -33,7 +35,7 @@ const RunCoachScreen = () => {
 
   useEffect(() => {
     loadAIRecommendations();
-  }, []);
+  }, [user?.healthProfile]); // Reload when health profile changes
 
   const loadAIRecommendations = async () => {
     try {
@@ -48,14 +50,18 @@ const RunCoachScreen = () => {
         location = LocationService.getFallbackLocation();
       }
 
-      // Example user profile - in real app this would come from user settings
+      // Get real user profile data or use defaults
       const userProfile = {
-        healthConditions: ['none'], // Could be ['asthma', 'pregnancy', etc.]
-        ageGroup: 'adult' as const,
-        fitnessLevel: 'moderate' as const,
-        outdoorActivities: ['running', 'cycling'],
-        sensitivities: []
+        healthConditions: user?.healthProfile?.conditions || ['none'],
+        ageGroup: user?.healthProfile?.ageGroup || 'adult',
+        fitnessLevel: user?.healthProfile?.lifestyle?.includes('athlete') ? 'high'
+                     : user?.healthProfile?.lifestyle?.includes('regular_exercise') ? 'moderate'
+                     : 'low',
+        outdoorActivities: ['running', 'cycling'], // Could be extended based on lifestyle
+        sensitivities: user?.healthProfile?.sensitivities || []
       };
+
+      console.log('👤 Using personalized user profile:', userProfile);
 
       // Get AI recommendation
       const recommendation = await RecommendationsApi.getRunRecommendation(
@@ -167,7 +173,87 @@ const RunCoachScreen = () => {
       );
     }
 
-    // Placeholder content for Places and Profile tabs
+    // Profile tab - show user's health profile affecting recommendations
+    if (activeTab === 'Profile') {
+      return (
+        <ScrollView style={styles.profileContent}>
+          <View style={styles.profileSection}>
+            <Text style={styles.profileTitle}>Your Health Profile</Text>
+            <Text style={styles.profileSubtitle}>
+              This information personalizes your air quality recommendations
+            </Text>
+          </View>
+
+          <View style={styles.profileCard}>
+            <Text style={styles.cardTitle}>Health Conditions</Text>
+            <View style={styles.chipContainer}>
+              {(user?.healthProfile?.conditions || ['none']).map((condition) => (
+                <View key={condition} style={styles.chip}>
+                  <Text style={styles.chipText}>
+                    {condition === 'none' ? 'No health conditions' : condition.replace('_', ' ')}
+                  </Text>
+                </View>
+              ))}
+            </View>
+          </View>
+
+          <View style={styles.profileCard}>
+            <Text style={styles.cardTitle}>Age Group</Text>
+            <View style={styles.chipContainer}>
+              <View style={styles.chip}>
+                <Text style={styles.chipText}>
+                  {user?.healthProfile?.ageGroup || 'Adult'}
+                </Text>
+              </View>
+            </View>
+          </View>
+
+          <View style={styles.profileCard}>
+            <Text style={styles.cardTitle}>Lifestyle</Text>
+            <View style={styles.chipContainer}>
+              {(user?.healthProfile?.lifestyle || []).length > 0 ? (
+                user.healthProfile.lifestyle.map((item) => (
+                  <View key={item} style={styles.chip}>
+                    <Text style={styles.chipText}>{item.replace('_', ' ')}</Text>
+                  </View>
+                ))
+              ) : (
+                <View style={styles.chip}>
+                  <Text style={styles.chipText}>No lifestyle factors selected</Text>
+                </View>
+              )}
+            </View>
+          </View>
+
+          <View style={styles.profileCard}>
+            <Text style={styles.cardTitle}>Sensitivities</Text>
+            <View style={styles.chipContainer}>
+              {(user?.healthProfile?.sensitivities || []).length > 0 ? (
+                user.healthProfile.sensitivities.map((item) => (
+                  <View key={item} style={styles.chip}>
+                    <Text style={styles.chipText}>{item}</Text>
+                  </View>
+                ))
+              ) : (
+                <View style={styles.chip}>
+                  <Text style={styles.chipText}>No sensitivities</Text>
+                </View>
+              )}
+            </View>
+          </View>
+
+          {!user && (
+            <View style={styles.loginPrompt}>
+              <Text style={styles.loginPromptText}>
+                Sign in to get personalized recommendations based on your health profile
+              </Text>
+            </View>
+          )}
+        </ScrollView>
+      );
+    }
+
+    // Placeholder for Places tab
     return (
       <View style={styles.placeholderContent}>
         <Text style={styles.placeholderText}>{activeTab} Content</Text>
@@ -356,6 +442,67 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 16,
     fontWeight: '600',
+  },
+  profileContent: {
+    flex: 1,
+    padding: 16,
+  },
+  profileSection: {
+    marginBottom: 24,
+  },
+  profileTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 8,
+  },
+  profileSubtitle: {
+    fontSize: 16,
+    color: '#666',
+  },
+  profileCard: {
+    backgroundColor: 'white',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  cardTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 12,
+  },
+  chipContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  chip: {
+    backgroundColor: '#f0f0f0',
+    borderRadius: 16,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
+  chipText: {
+    fontSize: 14,
+    color: '#555',
+    textTransform: 'capitalize',
+  },
+  loginPrompt: {
+    backgroundColor: '#fff3e0',
+    borderRadius: 12,
+    padding: 16,
+    marginTop: 16,
+  },
+  loginPromptText: {
+    fontSize: 16,
+    color: '#f57c00',
+    textAlign: 'center',
   },
 });
 
