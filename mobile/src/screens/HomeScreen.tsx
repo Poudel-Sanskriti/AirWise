@@ -10,7 +10,7 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import AirQualityApiService, { AirQualityData } from '../services/airQualityApi';
+import AirQualityApiService, { AirQualityData, WeatherData } from '../services/airQualityApi';
 import LocationService, { LocationWithDetails } from '../services/locationService';
 
 interface SavedPlace {
@@ -32,6 +32,7 @@ interface HomeScreenProps {
 
 const HomeScreen: React.FC<HomeScreenProps> = ({ selectedPlace, onClearSelectedPlace }) => {
   const [airQualityData, setAirQualityData] = useState<AirQualityData | null>(null);
+  const [weatherData, setWeatherData] = useState<WeatherData | null>(null);
   const [userLocation, setUserLocation] = useState<LocationWithDetails | null>(null);
   const [loading, setLoading] = useState(true);
   const [locationLoading, setLocationLoading] = useState(true);
@@ -64,13 +65,14 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ selectedPlace, onClearSelectedP
       setUserLocation(location);
       setLocationLoading(false);
 
-      // Get air quality for the location
-      const data = await AirQualityApiService.getCurrentAirQuality(
+      // Get air quality and weather for the location
+      const combinedData = await AirQualityApiService.getCurrentAirQualityAndWeather(
         location.latitude,
         location.longitude
       );
 
-      setAirQualityData(data);
+      setAirQualityData(combinedData.airQuality);
+      setWeatherData(combinedData.weather);
     } catch (err) {
       setError('Failed to load data');
       console.error('Location/Air quality error:', err);
@@ -105,13 +107,14 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ selectedPlace, onClearSelectedP
 
       setUserLocation(location);
 
-      // Get air quality for the selected place
-      const data = await AirQualityApiService.getCurrentAirQuality(
+      // Get air quality and weather for the selected place
+      const combinedData = await AirQualityApiService.getCurrentAirQualityAndWeather(
         selectedPlace.latitude,
         selectedPlace.longitude
       );
 
-      setAirQualityData(data);
+      setAirQualityData(combinedData.airQuality);
+      setWeatherData(combinedData.weather);
     } catch (err) {
       setError('Failed to load data for selected place');
       console.error('Selected place air quality error:', err);
@@ -292,6 +295,48 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ selectedPlace, onClearSelectedP
             <Text style={styles.metricUnit}>AQI</Text>
           </View>
         </View>
+
+        {/* Weather Card */}
+        {weatherData && (
+          <View style={styles.weatherCard}>
+            <View style={styles.weatherHeader}>
+              <Ionicons name="partly-sunny" size={24} color="#4CAF50" />
+              <Text style={styles.weatherTitle}>Current Weather</Text>
+            </View>
+
+            <View style={styles.weatherContent}>
+              <View style={styles.temperatureSection}>
+                <Text style={styles.temperature}>{weatherData.current.temperature}°F</Text>
+                <Text style={styles.feelsLike}>Feels like {weatherData.current.feelsLike}°F</Text>
+                <Text style={styles.weatherDescription}>{weatherData.conditions.description}</Text>
+              </View>
+
+              <View style={styles.weatherDetails}>
+                <View style={styles.weatherDetail}>
+                  <Ionicons name="water" size={16} color="#4CAF50" />
+                  <Text style={styles.weatherDetailText}>Humidity: {weatherData.current.humidity}%</Text>
+                </View>
+
+                <View style={styles.weatherDetail}>
+                  <Ionicons name="flag" size={16} color="#4CAF50" />
+                  <Text style={styles.weatherDetailText}>Wind: {weatherData.wind.speed} mph {weatherData.wind.directionText}</Text>
+                </View>
+
+                <View style={styles.weatherDetail}>
+                  <Ionicons name="eye" size={16} color="#4CAF50" />
+                  <Text style={styles.weatherDetailText}>Visibility: {weatherData.current.visibility} mi</Text>
+                </View>
+
+                {weatherData.current.uvIndex && (
+                  <View style={styles.weatherDetail}>
+                    <Ionicons name="sunny" size={16} color="#4CAF50" />
+                    <Text style={styles.weatherDetailText}>UV Index: {weatherData.current.uvIndex}</Text>
+                  </View>
+                )}
+              </View>
+            </View>
+          </View>
+        )}
 
         {/* Additional Info Grid */}
         <View style={styles.additionalGrid}>
@@ -505,6 +550,66 @@ const styles = StyleSheet.create({
     fontSize: 14,
     marginLeft: 8,
     fontWeight: '500',
+  },
+  // Weather Card Styles
+  weatherCard: {
+    backgroundColor: 'white',
+    borderRadius: 16,
+    padding: 20,
+    marginBottom: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  weatherHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  weatherTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#333',
+    marginLeft: 12,
+  },
+  weatherContent: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  temperatureSection: {
+    flex: 1,
+  },
+  temperature: {
+    fontSize: 36,
+    fontWeight: 'bold',
+    color: '#4CAF50',
+  },
+  feelsLike: {
+    fontSize: 14,
+    color: '#666',
+    marginTop: 4,
+  },
+  weatherDescription: {
+    fontSize: 16,
+    color: '#333',
+    marginTop: 8,
+    textTransform: 'capitalize',
+  },
+  weatherDetails: {
+    flex: 1,
+    paddingLeft: 20,
+  },
+  weatherDetail: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  weatherDetailText: {
+    fontSize: 14,
+    color: '#666',
+    marginLeft: 8,
   },
 });
 

@@ -36,15 +36,62 @@ export interface AirQualityData {
   lastUpdated: string;
 }
 
+export interface WeatherData {
+  location: {
+    city: string;
+    country: string;
+    latitude: number;
+    longitude: number;
+  };
+  current: {
+    temperature: number;
+    feelsLike: number;
+    humidity: number;
+    pressure: number;
+    visibility: number;
+    uvIndex?: number;
+  };
+  wind: {
+    speed: number;
+    direction: number;
+    directionText: string;
+    gust?: number;
+  };
+  conditions: {
+    main: string;
+    description: string;
+    icon: string;
+    cloudCover: number;
+  };
+  sun: {
+    sunrise: string;
+    sunset: string;
+  };
+  timestamp: string;
+}
+
+export interface CombinedData {
+  airQuality: AirQualityData;
+  weather: WeatherData;
+}
+
 export interface ApiResponse {
   success: boolean;
-  data: AirQualityData;
-  source: string;
+  data: CombinedData;
+  sources: {
+    airQuality: string;
+    weather: string;
+  };
   timestamp: string;
 }
 
 class AirQualityApiService {
   async getCurrentAirQuality(latitude: number, longitude: number): Promise<AirQualityData> {
+    const combined = await this.getCurrentAirQualityAndWeather(latitude, longitude);
+    return combined.airQuality;
+  }
+
+  async getCurrentAirQualityAndWeather(latitude: number, longitude: number): Promise<CombinedData> {
     try {
       console.log(`📱 Fetching air quality for: ${latitude}, ${longitude}`);
       console.log(`📱 Using API URL: ${API_BASE_URL}`);
@@ -75,7 +122,8 @@ class AirQualityApiService {
         throw new Error('API returned error response');
       }
 
-      console.log(`✅ Received air quality data from ${result.source}`);
+      console.log(`✅ Received air quality data from ${result.sources.airQuality}`);
+      console.log(`✅ Received weather data from ${result.sources.weather}`);
       console.log(`📱 Final processed data:`, JSON.stringify(result.data, null, 2));
 
       return result.data;
@@ -85,7 +133,10 @@ class AirQualityApiService {
 
       // Return fallback mock data if API fails
       console.log('📱 Using fallback mock data');
-      return this.getFallbackMockData(latitude, longitude);
+      return {
+        airQuality: this.getFallbackMockData(latitude, longitude),
+        weather: this.getFallbackWeatherData(latitude, longitude)
+      };
     }
   }
 
@@ -151,6 +202,62 @@ class AirQualityApiService {
     if (aqi <= 200) return 'Unhealthy air quality. Everyone should limit outdoor activities. 🏠';
     if (aqi <= 300) return 'Very unhealthy air. Avoid all outdoor activities. 🚨';
     return 'Hazardous air quality! Stay indoors and avoid all outdoor activities. ☠️';
+  }
+
+  private getFallbackWeatherData(lat: number, lon: number): WeatherData {
+    // Generate realistic weather data for fallback
+    const temperature = Math.round(Math.random() * 30) + 65; // 65-95°F
+    const humidity = Math.round(Math.random() * 40) + 40; // 40-80%
+    const windSpeed = Math.round(Math.random() * 15) + 5; // 5-20 mph
+    const windDirection = Math.round(Math.random() * 360);
+
+    const conditions = ['Clear', 'Clouds', 'Rain'];
+    const weatherCondition = conditions[Math.floor(Math.random() * conditions.length)];
+
+    return {
+      location: {
+        city: 'Houston',
+        country: 'US',
+        latitude: lat,
+        longitude: lon
+      },
+      current: {
+        temperature,
+        feelsLike: temperature + Math.round(Math.random() * 10) - 5,
+        humidity,
+        pressure: 1013 + Math.round(Math.random() * 20) - 10,
+        visibility: Math.round(Math.random() * 5) + 5,
+        uvIndex: Math.round(Math.random() * 10) + 1
+      },
+      wind: {
+        speed: windSpeed,
+        direction: windDirection,
+        directionText: this.getWindDirection(windDirection)
+      },
+      conditions: {
+        main: weatherCondition,
+        description: weatherCondition.toLowerCase(),
+        icon: '01d',
+        cloudCover: Math.round(Math.random() * 100)
+      },
+      sun: {
+        sunrise: new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString(),
+        sunset: new Date(Date.now() + 6 * 60 * 60 * 1000).toISOString()
+      },
+      timestamp: new Date().toISOString()
+    };
+  }
+
+  private getWindDirection(degrees: number): string {
+    const directions = [
+      'N', 'NNE', 'NE', 'ENE',
+      'E', 'ESE', 'SE', 'SSE',
+      'S', 'SSW', 'SW', 'WSW',
+      'W', 'WNW', 'NW', 'NNW'
+    ];
+
+    const index = Math.round(degrees / 22.5) % 16;
+    return directions[index];
   }
 }
 
