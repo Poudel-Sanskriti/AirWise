@@ -1,3 +1,5 @@
+import 'expo-standard-web-crypto';
+import 'react-native-url-polyfill/auto';
 import { createClient } from '@supabase/supabase-js';
 import Constants from 'expo-constants';
 
@@ -16,5 +18,7 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
     autoRefreshToken: true,
     persistSession: true,
+    // Use PKCE for native mobile OAuth flows
+    flowType: 'pkce',
   },
 });

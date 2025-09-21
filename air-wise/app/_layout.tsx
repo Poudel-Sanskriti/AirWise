@@ -4,6 +4,9 @@ import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
 import 'react-native-reanimated';
+// Polyfills must be loaded early so Supabase and AuthSession can use them
+import 'react-native-url-polyfill/auto';
+import 'expo-standard-web-crypto';
 
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { AuthProvider } from '@/contexts/auth-context';
