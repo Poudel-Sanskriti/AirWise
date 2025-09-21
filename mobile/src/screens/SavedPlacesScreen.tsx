@@ -15,6 +15,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import AirQualityApiService from '../services/airQualityApi';
 import LocationService from '../services/locationService';
+import MapComponent from '../components/MapComponent';
 
 interface SavedPlace {
   id: string;
@@ -50,6 +51,8 @@ const SavedPlacesScreen: React.FC<SavedPlacesScreenProps> = ({ onPlaceSelect }) 
   const [isInitialized, setIsInitialized] = useState(false);
   const [loadingPlaceId, setLoadingPlaceId] = useState<string | null>(null);
 
+  const [userLocation, setUserLocation] = useState<{ latitude: number; longitude: number } | null>(null);
+
   // Add Place Modal state
   const [showAddPlaceModal, setShowAddPlaceModal] = useState(false);
   const [selectedPlaceOption, setSelectedPlaceOption] = useState<PlaceOption>(PLACE_OPTIONS[0]);
@@ -69,6 +72,9 @@ const SavedPlacesScreen: React.FC<SavedPlacesScreenProps> = ({ onPlaceSelect }) 
       const location = await LocationService.getCurrentLocationWithDetails();
 
       if (location) {
+
+        setUserLocation({ latitude: location.latitude, longitude: location.longitude });
+
         const currentLocationPlace: SavedPlace = {
           id: 'current-location',
           name: 'Current Location',
@@ -88,6 +94,8 @@ const SavedPlacesScreen: React.FC<SavedPlacesScreenProps> = ({ onPlaceSelect }) 
       } else {
         console.log('📍 Using fallback location for saved places');
         const fallbackLocation = LocationService.getFallbackLocation();
+
+        setUserLocation({ latitude: fallbackLocation.latitude, longitude: fallbackLocation.longitude });
 
         const fallbackPlace: SavedPlace = {
           id: 'fallback-location',
@@ -306,12 +314,15 @@ const SavedPlacesScreen: React.FC<SavedPlacesScreenProps> = ({ onPlaceSelect }) 
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#f5f5f5" />
 
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Saved Places</Text>
-        <Text style={styles.headerSubtitle}>Tap any location for current air quality</Text>
-      </View>
+      <ScrollView style={styles.contentContainer} showsVerticalScrollIndicator={false}>
+        <MapComponent userLocation={userLocation} style={styles.mapContainer} />
 
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+        <View style={styles.header}>
+          <Text style={styles.headerTitle}>Saved Places</Text>
+          <Text style={styles.headerSubtitle}>Tap any location for current air quality</Text>
+        </View>
+
+        <View style={styles.listContainer}>
         {savedPlaces.map(renderSavedPlace)}
 
         <TouchableOpacity
@@ -321,6 +332,7 @@ const SavedPlacesScreen: React.FC<SavedPlacesScreenProps> = ({ onPlaceSelect }) 
           <Ionicons name="add-circle" size={24} color="#4CAF50" />
           <Text style={styles.addPlaceText}>Save Current Location</Text>
         </TouchableOpacity>
+        </View>
       </ScrollView>
 
       {/* Add Place Modal */}
@@ -404,13 +416,43 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#f5f5f5',
   },
-  header: {
-    backgroundColor: 'white',
-    paddingHorizontal: 20,
-    paddingVertical: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
+  // --- ADDED/MODIFIED STYLES START HERE ---
+
+  // 1. RENAMED: `content` was renamed to `contentContainer` for the main ScrollView.
+  contentContainer: {
+    flex: 1,
   },
+  // 2. ADDED: A container for the map view.
+  mapContainer: {
+    height: 250,
+    backgroundColor: '#e0e0e0',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  // 3. ADDED: The style for the MapView component itself.
+  map: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+  },
+  // 4. MODIFIED: The header no longer needs a background or border,
+  // since the main view provides the background color.
+  header: {
+    backgroundColor: 'transparent',
+    paddingHorizontal: 20,
+    paddingBottom: 20,
+  },
+  // 5. ADDED: A new container for the list of places below the header.
+  listContainer: {
+    paddingHorizontal: 20,
+  },
+
+  // --- ADDED/MODIFIED STYLES END HERE ---
+  // (The rest of your styles from here were correct)
+
   headerTitle: {
     fontSize: 24,
     fontWeight: 'bold',
@@ -420,10 +462,6 @@ const styles = StyleSheet.create({
   headerSubtitle: {
     fontSize: 14,
     color: '#666',
-  },
-  content: {
-    flex: 1,
-    padding: 20,
   },
   placeCard: {
     backgroundColor: 'white',
