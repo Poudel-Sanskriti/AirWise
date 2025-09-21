@@ -21,7 +21,8 @@
     "test:all": "cd backend && npm test"
   },
   "devDependencies": {
-    "concurrently": "^8.2.0"
+    "concurrently": "^8.2.0",
+    "tsx": "^4.20.5"
   },
   "keywords": [
     "air-quality",
@@ -31,5 +32,10 @@
     "idso-challenge"
   ],
   "author": "AirWise Team",
-  "license": "MIT"
+  "license": "MIT",
+  "dependencies": {},
+  "overrides": {
+    "react": "19.1.0",
+    "react-dom": "19.1.0"
+  }
 }

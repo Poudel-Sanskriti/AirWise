@@ -1,0 +1,17 @@
+airwise-monorepo@1.0.0 /Users/aishwaryaramesh/Documents/AirWise
+├─┬ expo-router@6.0.7 extraneous
+│ └── react@19.1.1 deduped invalid: "19.1.0" from node_modules/expo-router
+├─┬ react-native-gesture-handler@2.28.0 extraneous
+│ └── react@19.1.1 deduped invalid: "19.1.0" from node_modules/expo-router, "19.1.0" from node_modules/react-native-gesture-handler
+├─┬ react-native-is-edge-to-edge@1.2.1 extraneous
+│ └── react@19.1.1 deduped invalid: "19.1.0" from node_modules/expo-router, "19.1.0" from node_modules/react-native-gesture-handler, "19.1.0" from node_modules/react-native-is-edge-to-edge
+├─┬ react-native-screens@4.16.0 extraneous
+│ └── react@19.1.1 deduped invalid: "19.1.0" from node_modules/expo-router, "19.1.0" from node_modules/react-native-gesture-handler, "19.1.0" from node_modules/react-native-is-edge-to-edge, "19.1.0" from node_modules/react-native-screens
+├─┬ react-style-singleton@2.2.3 extraneous
+│ └── react@19.1.1 deduped invalid: "19.1.0" from node_modules/expo-router, "19.1.0" from node_modules/react-native-gesture-handler, "19.1.0" from node_modules/react-native-is-edge-to-edge, "19.1.0" from node_modules/react-native-screens, "19.1.0" from node_modules/react-style-singleton
+├── react@19.1.1 invalid: "19.1.0" from node_modules/expo-router, "19.1.0" from node_modules/react-native-gesture-handler, "19.1.0" from node_modules/react-native-is-edge-to-edge, "19.1.0" from node_modules/react-native-screens, "19.1.0" from node_modules/react-style-singleton extraneous overridden
+├─┬ use-latest-callback@0.2.4 extraneous
+│ └── react@19.1.1 deduped invalid: "19.1.0" from node_modules/expo-router, "19.1.0" from node_modules/react-native-gesture-handler, "19.1.0" from node_modules/react-native-is-edge-to-edge, "19.1.0" from node_modules/react-native-screens, "19.1.0" from node_modules/react-style-singleton, "19.1.0" from node_modules/use-latest-callback
+└─┬ vaul@1.1.2 extraneous
+  └── react@19.1.1 deduped invalid: "19.1.0" from node_modules/expo-router, "19.1.0" from node_modules/react-native-gesture-handler, "19.1.0" from node_modules/react-native-is-edge-to-edge, "19.1.0" from node_modules/react-native-screens, "19.1.0" from node_modules/react-style-singleton, "19.1.0" from node_modules/use-latest-callback, "19.1.0" from node_modules/vaul
+

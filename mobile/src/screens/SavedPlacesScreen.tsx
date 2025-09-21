@@ -16,6 +16,7 @@ import { Ionicons } from '@expo/vector-icons';
 import AirQualityApiService from '../services/airQualityApi';
 import LocationService from '../services/locationService';
 import MapComponent from '../components/MapComponent';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 interface SavedPlace {
   id: string;
@@ -87,6 +88,7 @@ const SavedPlacesScreen: React.FC<SavedPlacesScreenProps> = ({ onPlaceSelect }) 
         };
 
         setSavedPlaces([currentLocationPlace]);
+        try { await AsyncStorage.setItem('lastSavedPlace', JSON.stringify(currentLocationPlace)); } catch { }
         console.log('✅ Added current location as first saved place');
 
         // Get initial air quality data
@@ -109,6 +111,7 @@ const SavedPlacesScreen: React.FC<SavedPlacesScreenProps> = ({ onPlaceSelect }) 
         };
 
         setSavedPlaces([fallbackPlace]);
+        try { await AsyncStorage.setItem('lastSavedPlace', JSON.stringify(fallbackPlace)); } catch { }
         refreshPlaceAirQuality(fallbackPlace);
       }
     } catch (error) {
@@ -171,10 +174,10 @@ const SavedPlacesScreen: React.FC<SavedPlacesScreenProps> = ({ onPlaceSelect }) 
         prevPlaces.map(p =>
           p.id === place.id
             ? {
-                ...p,
-                currentStatus: newStatus,
-                lastUpdated: new Date().toLocaleTimeString(),
-              }
+              ...p,
+              currentStatus: newStatus,
+              lastUpdated: new Date().toLocaleTimeString(),
+            }
             : p
         )
       );
@@ -247,6 +250,7 @@ const SavedPlacesScreen: React.FC<SavedPlacesScreenProps> = ({ onPlaceSelect }) 
       };
 
       setSavedPlaces(prevPlaces => [...prevPlaces, newPlace]);
+      try { await AsyncStorage.setItem('lastSavedPlace', JSON.stringify(newPlace)); } catch { }
       console.log(`✅ Added new place: ${placeName} at ${location.formattedAddress}`);
 
       // Close modal and get air quality data
@@ -323,15 +327,15 @@ const SavedPlacesScreen: React.FC<SavedPlacesScreenProps> = ({ onPlaceSelect }) 
         </View>
 
         <View style={styles.listContainer}>
-        {savedPlaces.map(renderSavedPlace)}
+          {savedPlaces.map(renderSavedPlace)}
 
-        <TouchableOpacity
-          style={styles.addPlaceButton}
-          onPress={openAddPlaceModal}
-        >
-          <Ionicons name="add-circle" size={24} color="#4CAF50" />
-          <Text style={styles.addPlaceText}>Save Current Location</Text>
-        </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.addPlaceButton}
+            onPress={openAddPlaceModal}
+          >
+            <Ionicons name="add-circle" size={24} color="#4CAF50" />
+            <Text style={styles.addPlaceText}>Save Current Location</Text>
+          </TouchableOpacity>
         </View>
       </ScrollView>
 

@@ -12,6 +12,8 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import RecommendationsApi from '../services/recommendationsApi';
 import LocationService from '../services/locationService';
+import { useAuth } from '../contexts/auth-context';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 interface RunRecommendation {
   recommendation: string;
@@ -28,8 +30,20 @@ const RunCoachScreen = () => {
   const [healthInsights, setHealthInsights] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { user } = useAuth();
+  const [lastPlace, setLastPlace] = useState<any | null>(null);
 
-  const tabs = ['Overview', 'Places', 'Profile'];
+  useEffect(() => {
+    const loadLastPlace = async () => {
+      try {
+        const raw = await AsyncStorage.getItem('lastSavedPlace');
+        if (raw) setLastPlace(JSON.parse(raw));
+      } catch { }
+    };
+    loadLastPlace();
+  }, [activeTab]);
+
+  const tabs = ['Overview', 'Profile'];
 
   useEffect(() => {
     loadAIRecommendations();
@@ -167,11 +181,27 @@ const RunCoachScreen = () => {
       );
     }
 
-    // Placeholder content for Places and Profile tabs
+    // Profile tab content
     return (
-      <View style={styles.placeholderContent}>
-        <Text style={styles.placeholderText}>{activeTab} Content</Text>
-        <Text style={styles.placeholderSubtext}>Coming Soon</Text>
+      <View style={styles.profileContainer}>
+        <Text style={styles.profileHeading}>Profile</Text>
+        {user ? (
+          <>
+            <Text style={styles.profileLabel}>Name</Text>
+            <Text style={styles.profileValue}>{user.name || user.nickname || user.email}</Text>
+            <Text style={styles.profileLabel}>Email</Text>
+            <Text style={styles.profileValue}>{user.email}</Text>
+            {lastPlace && (
+              <>
+                <Text style={styles.profileLabel}>Last Saved Place</Text>
+                <Text style={styles.profileValue}>{lastPlace.name} • {lastPlace.address?.split(',')[0] || ''}</Text>
+              </>
+            )}
+            {/* Last saved place will be inserted below later */}
+          </>
+        ) : (
+          <Text style={styles.profileValue}>Not signed in</Text>
+        )}
       </View>
     );
   };
@@ -321,6 +351,29 @@ const styles = StyleSheet.create({
   placeholderSubtext: {
     fontSize: 16,
     color: '#666',
+  },
+  profileContainer: {
+    flex: 1,
+    padding: 24,
+  },
+  profileHeading: {
+    fontSize: 28,
+    fontWeight: '700',
+    color: '#333',
+    marginBottom: 24,
+  },
+  profileLabel: {
+    marginTop: 12,
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#666',
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+  },
+  profileValue: {
+    fontSize: 18,
+    fontWeight: '500',
+    color: '#222',
   },
   loadingContainer: {
     flex: 1,
