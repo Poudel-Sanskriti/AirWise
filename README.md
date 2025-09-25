@@ -228,7 +228,7 @@ Copy `backend/.env.example` to `backend/.env` and configure:
 
 ## 🏆 **HACKATHON SUCCESS!**
 
-### **Competition Targets - ACHIEVED!**
+### **Competition Targets **
 
 #### **Primary Target: MD Anderson IDSO Healthcare Challenge** ✅
 - ✅ **All IDSO Requirements Met**: Risk card, health profiles, saved places
@@ -249,9 +249,3 @@ Copy `backend/.env.example` to `backend/.env` and configure:
 - 📍 **Smart Location**: GPS with saved places management
 - 🏃‍♂️ **Run Coach**: Activity timing and safety recommendations
 - 📱 **Polished UI**: Professional mobile app design
-
----
-
-**Happy Hacking! 🚀**
-
-For questions or issues, check the team Discord or create GitHub issues.
